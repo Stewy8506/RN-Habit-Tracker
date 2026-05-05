@@ -6,9 +6,10 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ensureAnonymousAuth, subscribeToAuth } from '@/services/authService';
-import { upsertUser } from '@/services/firestoreService';
+import { listenToUserSettings, upsertUser } from '@/services/firestoreService';
 import { subscribeToDnd } from '@/services/dndService';
 import { useSettingsStore } from '@/store/useSettingsStore';
+import { useTimerStore } from '@/store/useTimerStore';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -19,6 +20,9 @@ export default function RootLayout() {
   const setUserId = useSettingsStore((state) => state.setUserId);
   const setAuthLoading = useSettingsStore((state) => state.setAuthLoading);
   const setDndEnabled = useSettingsStore((state) => state.setDndEnabled);
+  const userId = useSettingsStore((state) => state.userId);
+  const setFocusDurationSeconds = useTimerStore((state) => state.setFocusDurationSeconds);
+  const setBreakDurationSeconds = useTimerStore((state) => state.setBreakDurationSeconds);
 
   useEffect(() => {
     const unsubscribeAuth = subscribeToAuth((user) => {
@@ -37,6 +41,25 @@ export default function RootLayout() {
       unsubscribeDnd();
     };
   }, [setAuthLoading, setDndEnabled, setUserId]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    return listenToUserSettings(
+      userId,
+      (settings) => {
+        if (settings.focusDurationSeconds) {
+          setFocusDurationSeconds(settings.focusDurationSeconds);
+        }
+        if (settings.breakDurationSeconds) {
+          setBreakDurationSeconds(settings.breakDurationSeconds);
+        }
+      },
+      () => undefined,
+    );
+  }, [setBreakDurationSeconds, setFocusDurationSeconds, userId]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

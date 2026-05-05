@@ -41,6 +41,40 @@ export async function upsertUser(userId: string) {
   await setDoc(userDoc(userId), { updatedAt: serverTimestamp() }, { merge: true });
 }
 
+export function listenToUserSettings(
+  userId: string,
+  onNext: (settings: { focusDurationSeconds?: number; breakDurationSeconds?: number }) => void,
+  onError: (error: Error) => void,
+) {
+  return onSnapshot(
+    userDoc(userId),
+    (snapshot) => {
+      const data = snapshot.data();
+      onNext({
+        focusDurationSeconds:
+          typeof data?.focusDurationSeconds === 'number' ? data.focusDurationSeconds : undefined,
+        breakDurationSeconds:
+          typeof data?.breakDurationSeconds === 'number' ? data.breakDurationSeconds : undefined,
+      });
+    },
+    onError,
+  );
+}
+
+export async function updateUserTimerSettings(
+  userId: string,
+  settings: { focusDurationSeconds?: number; breakDurationSeconds?: number },
+) {
+  await setDoc(
+    userDoc(userId),
+    {
+      ...settings,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
 export function listenToTasks(
   userId: string,
   onNext: (tasks: Task[]) => void,

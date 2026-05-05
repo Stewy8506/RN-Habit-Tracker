@@ -19,6 +19,8 @@ export default function FocusScreen() {
   const {
     mode,
     secondsLeft,
+    focusDurationSeconds,
+    breakDurationSeconds,
     isRunning,
     selectedTaskId,
     setSelectedTaskId,
@@ -27,7 +29,8 @@ export default function FocusScreen() {
     reset,
   } = useTimer();
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) ?? null;
-  const progress = 1 - secondsLeft / getModeDuration(mode);
+  const progress =
+    1 - secondsLeft / getModeDuration(mode, focusDurationSeconds, breakDurationSeconds);
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>

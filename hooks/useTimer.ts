@@ -9,6 +9,8 @@ export function useTimer() {
   const userId = useSettingsStore((state) => state.userId);
   const mode = useTimerStore((state) => state.mode);
   const secondsLeft = useTimerStore((state) => state.secondsLeft);
+  const focusDurationSeconds = useTimerStore((state) => state.focusDurationSeconds);
+  const breakDurationSeconds = useTimerStore((state) => state.breakDurationSeconds);
   const isRunning = useTimerStore((state) => state.isRunning);
   const selectedTaskId = useTimerStore((state) => state.selectedTaskId);
   const setMode = useTimerStore((state) => state.setMode);
@@ -26,12 +28,20 @@ export function useTimer() {
     if (completedMode === 'focus') {
       await disableDnd();
       if (userId) {
-        await saveCompletedFocusSession(userId, selectedTaskId);
+        await saveCompletedFocusSession(userId, selectedTaskId, focusDurationSeconds);
       }
     }
 
-    setMode(nextMode, getModeDuration(nextMode));
-  }, [mode, selectedTaskId, setIsRunning, setMode, userId]);
+    setMode(nextMode, getModeDuration(nextMode, focusDurationSeconds, breakDurationSeconds));
+  }, [
+    breakDurationSeconds,
+    focusDurationSeconds,
+    mode,
+    selectedTaskId,
+    setIsRunning,
+    setMode,
+    userId,
+  ]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -72,6 +82,8 @@ export function useTimer() {
   return {
     mode,
     secondsLeft,
+    focusDurationSeconds,
+    breakDurationSeconds,
     isRunning,
     selectedTaskId,
     setSelectedTaskId,
