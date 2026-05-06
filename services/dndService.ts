@@ -1,6 +1,15 @@
+import {
+  disableNativeDnd,
+  enableNativeDnd,
+  hasDndPolicyAccess,
+  isNativeDndAvailable,
+  openDndPolicyAccessSettings,
+} from '@/modules/dnd-controller/src';
+
 type DndListener = (enabled: boolean) => void;
 
 let enabled = false;
+let nativeControlled = false;
 const listeners = new Set<DndListener>();
 
 function emit() {
@@ -8,17 +17,34 @@ function emit() {
 }
 
 export async function enableDnd() {
-  enabled = true;
+  nativeControlled = enableNativeDnd();
+  enabled = nativeControlled || true;
   emit();
+  return nativeControlled;
 }
 
 export async function disableDnd() {
+  nativeControlled = false;
+  disableNativeDnd();
   enabled = false;
   emit();
 }
 
 export function getDndEnabled() {
   return enabled;
+}
+
+export function getDndStatus() {
+  return {
+    enabled,
+    nativeAvailable: isNativeDndAvailable(),
+    nativeControlled,
+    policyAccessGranted: hasDndPolicyAccess(),
+  };
+}
+
+export async function requestDndPolicyAccess() {
+  return openDndPolicyAccessSettings();
 }
 
 export function subscribeToDnd(listener: DndListener) {

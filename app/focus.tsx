@@ -9,6 +9,7 @@ import { TimerDisplay } from '@/components/Timer/TimerDisplay';
 import { TaskList } from '@/components/Task/TaskList';
 import { useTasks } from '@/hooks/useTasks';
 import { useTimer } from '@/hooks/useTimer';
+import { getDndStatus } from '@/services/dndService';
 import { getModeDuration } from '@/services/timerService';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { COLORS } from '@/utils/constants';
@@ -31,6 +32,7 @@ export default function FocusScreen() {
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) ?? null;
   const progress =
     1 - secondsLeft / getModeDuration(mode, focusDurationSeconds, breakDurationSeconds);
+  const dndStatus = getDndStatus();
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
@@ -47,7 +49,11 @@ export default function FocusScreen() {
         <ProgressRing progress={progress} />
         <Text style={styles.taskName}>{selectedTask?.title ?? 'No task selected'}</Text>
         <Text style={[styles.dnd, dndEnabled && styles.dndOn]}>
-          DND {dndEnabled ? 'enabled' : 'disabled'}
+          {dndStatus.nativeControlled
+            ? 'Phone DND enabled'
+            : dndEnabled
+              ? 'Focus shield active'
+              : 'DND disabled'}
         </Text>
         <TimerControls isRunning={isRunning} onStart={start} onPause={pause} onReset={reset} />
       </Card>

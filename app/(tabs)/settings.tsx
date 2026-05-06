@@ -1,7 +1,8 @@
 import { ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
+import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
-import { disableDnd, enableDnd } from '@/services/dndService';
+import { disableDnd, enableDnd, getDndStatus, requestDndPolicyAccess } from '@/services/dndService';
 import { updateUserTimerSettings } from '@/services/firestoreService';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
@@ -24,6 +25,7 @@ export default function SettingsScreen() {
   const breakDurationSeconds = useTimerStore((state) => state.breakDurationSeconds);
   const setFocusDurationMinutes = useTimerStore((state) => state.setFocusDurationMinutes);
   const setBreakDurationMinutes = useTimerStore((state) => state.setBreakDurationMinutes);
+  const dndStatus = getDndStatus();
 
   const toggleDnd = (enabled: boolean) => {
     void (enabled ? enableDnd() : disableDnd());
@@ -61,11 +63,20 @@ export default function SettingsScreen() {
           <View style={styles.rowText}>
             <Text style={styles.label}>DND during focus</Text>
             <Text style={styles.value}>
-              {dndEnabled ? 'Simulated DND is enabled' : 'Simulated DND is off'}
+              {dndStatus.nativeControlled
+                ? 'Phone DND is controlled during focus'
+                : dndStatus.policyAccessGranted
+                  ? 'Ready to control phone DND in a dev build'
+                  : 'Grant DND access to control phone DND'}
             </Text>
           </View>
           <Switch value={dndEnabled} onValueChange={toggleDnd} />
         </View>
+        <Button
+          title="Open DND Access Settings"
+          variant="secondary"
+          onPress={() => void requestDndPolicyAccess()}
+        />
       </Card>
 
       <Card style={styles.card}>
