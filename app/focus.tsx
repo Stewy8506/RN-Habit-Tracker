@@ -28,7 +28,7 @@ export default function FocusScreen() {
   } = useTimer();
 
   const progress =
-    1 - secondsLeft / getModeDuration(mode, focusDurationSeconds, breakDurationSeconds);
+    secondsLeft / getModeDuration(mode, focusDurationSeconds, breakDurationSeconds);
 
   const handleSkip = useCallback(() => {
     const currentMode = useTimerStore.getState().mode;
