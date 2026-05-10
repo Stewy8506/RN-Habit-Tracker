@@ -79,6 +79,29 @@ export function useTimer() {
     await disableDnd();
   };
 
+  const skip = async () => {
+    const currentMode = useTimerStore.getState().mode;
+    const nextMode = currentMode === 'focus' ? 'break' : 'focus';
+    const running = useTimerStore.getState().isRunning;
+
+    // Leaving focus → always disable DND
+    if (currentMode === 'focus') {
+      await disableDnd();
+    }
+
+    // Entering focus while running → re-enable DND
+    if (nextMode === 'focus' && running) {
+      await enableDnd();
+    }
+
+    const fds = useTimerStore.getState().focusDurationSeconds;
+    const bds = useTimerStore.getState().breakDurationSeconds;
+    useTimerStore.getState().setMode(
+      nextMode,
+      getModeDuration(nextMode, fds, bds)
+    );
+  };
+
   return {
     mode,
     secondsLeft,
@@ -90,5 +113,6 @@ export function useTimer() {
     start,
     pause,
     reset,
+    skip,
   };
 }
