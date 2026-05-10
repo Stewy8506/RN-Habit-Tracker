@@ -94,7 +94,7 @@ export function CircularProgressRing({
           strokeWidth={wideGlowWidth}
           strokeLinecap="butt"
           strokeDasharray={wideGlowCircumference}
-          opacity={0.06}
+          opacity={0.12}
           rotation="-90"
           origin={`${center}, ${center}`}
         />
@@ -110,7 +110,7 @@ export function CircularProgressRing({
           strokeWidth={tightGlowWidth}
           strokeLinecap="butt"
           strokeDasharray={tightGlowCircumference}
-          opacity={0.2}
+          opacity={0.35}
           rotation="-90"
           origin={`${center}, ${center}`}
         />
@@ -126,6 +126,7 @@ export function CircularProgressRing({
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
+          opacity={0.8}
           rotation="-90"
           origin={`${center}, ${center}`}
         />

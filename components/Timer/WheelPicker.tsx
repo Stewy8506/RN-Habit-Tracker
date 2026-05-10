@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react';
+import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -7,7 +9,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export const ITEM_HEIGHT = 56;
 const VISIBLE = 5; // must be odd
@@ -28,23 +29,38 @@ export function WheelPicker({
   width = 90,
 }: WheelPickerProps) {
   const scrollRef = useRef<ScrollView>(null);
+  const isScrollingRef = useRef(false);
+  const lastIndexRef = useRef(selectedIndex);
 
-  // Scroll to initial position after mount
+  // Scroll to selected position when selectedIndex changes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollRef.current?.scrollTo({
-        y: selectedIndex * ITEM_HEIGHT,
-        animated: false,
-      });
-    }, 80);
-    return () => clearTimeout(timer);
-  }, []);
+    if (scrollRef.current && selectedIndex >= 0 && !isScrollingRef.current) {
+      // Small delay to ensure component is fully mounted
+      setTimeout(() => {
+        const y = selectedIndex * ITEM_HEIGHT;
+        scrollRef.current?.scrollTo({ y, animated: false });
+      }, 10);
+    }
+  }, [selectedIndex]);
 
   const settle = useCallback(
     (y: number) => {
+      isScrollingRef.current = false;
       const index = Math.round(y / ITEM_HEIGHT);
       const clamped = Math.max(0, Math.min(items.length - 1, index));
-      scrollRef.current?.scrollTo({ y: clamped * ITEM_HEIGHT, animated: true });
+      
+      // Trigger haptic feedback if index changed
+      if (clamped !== lastIndexRef.current) {
+        try {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(err => {
+            console.log('Haptics error:', err);
+          });
+        } catch (err) {
+          console.log('Haptics try-catch error:', err);
+        }
+        lastIndexRef.current = clamped;
+      }
+      
       onChange(clamped);
     },
     [items.length, onChange]
@@ -59,18 +75,22 @@ export function WheelPicker({
 
   const onScrollEndDrag = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      settle(e.nativeEvent.contentOffset.y);
+      isScrollingRef.current = true;
+      // Only settle if not currently in momentum scrolling
+      const velocity = e.nativeEvent.velocity?.y || 0;
+      if (Math.abs(velocity) < 0.2) {
+        settle(e.nativeEvent.contentOffset.y);
+      }
     },
     [settle]
   );
 
+  const onScrollBeginDrag = useCallback(() => {
+    isScrollingRef.current = true;
+  }, []);
+
   return (
     <View style={[styles.container, { width, height: PICKER_HEIGHT }]}>
-      {/*
-        IMPORTANT ORDER: ScrollView first (lowest z-index).
-        Overlays come after, all wrapped in View with pointerEvents="none"
-        so they never intercept touch events from the ScrollView.
-      */}
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
@@ -78,12 +98,21 @@ export function WheelPicker({
         decelerationRate="fast"
         onMomentumScrollEnd={onMomentumScrollEnd}
         onScrollEndDrag={onScrollEndDrag}
-        scrollEventThrottle={16}
+        onScrollBeginDrag={onScrollBeginDrag}
+        scrollEventThrottle={8}
         contentContainerStyle={{ paddingVertical: PADDING }}
+        contentOffset={{ x: 0, y: selectedIndex * ITEM_HEIGHT }} // Set initial position
       >
         {items.map((item, i) => (
           <View key={i} style={styles.item}>
-            <Text style={styles.itemText}>{item}</Text>
+            <Text 
+              style={[
+                styles.itemText,
+                i === selectedIndex && styles.selectedItemText,
+              ]}
+            >
+              {item}
+            </Text>
           </View>
         ))}
       </ScrollView>
@@ -121,6 +150,7 @@ export function WheelPicker({
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: '#0D0D0D',
     overflow: 'hidden',
   },
 
@@ -137,14 +167,22 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
+  selectedItemText: {
+    color: '#FFF',
+    fontSize: 34,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+
   selectionBand: {
     position: 'absolute',
     left: 0,
     right: 0,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#333',
-    backgroundColor: '#161616',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 18,
   },
 
   fadeOverlay: {

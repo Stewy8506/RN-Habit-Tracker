@@ -6,13 +6,14 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+  View,
 } from 'react-native';
 import Animated, {
+  Easing,
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -72,8 +73,23 @@ export default function FocusScreen() {
 
   // ── Mode transition animation ─────────────────────────────────────────────
   const transition = useSharedValue(0);
+  const modeTextOpacity = useSharedValue(1);
+  const modeTextScale = useSharedValue(1);
+  const [displayedMode, setDisplayedMode] = useState(mode);
 
   useEffect(() => {
+    // Animate mode text
+    modeTextOpacity.value = withTiming(0.5, { duration: 300 });
+    modeTextScale.value = withTiming(0.95, { duration: 300 });
+    
+    // Change text at the midpoint (smallest scale)
+    setTimeout(() => {
+      setDisplayedMode(mode);
+      modeTextOpacity.value = withTiming(1, { duration: 300 });
+      modeTextScale.value = withTiming(1, { duration: 300 });
+    }, 300);
+
+    // Animate background
     transition.value = withTiming(mode === 'focus' ? 0 : 1, { duration: 800 });
   }, [mode]);
 
@@ -85,6 +101,28 @@ export default function FocusScreen() {
     );
     return { backgroundColor };
   });
+
+  const animatedModeTextStyle = useAnimatedStyle(() => ({
+    opacity: modeTextOpacity.value,
+    transform: [{ scale: modeTextScale.value }],
+  }));
+
+  const modalScale = useSharedValue(0.92);
+  const modalOpacity = useSharedValue(0);
+
+  const animatedModalStyle = useAnimatedStyle(() => {
+  return {
+    opacity: modalOpacity.value,
+    transform: [
+      {
+        translateY: (1 - modalOpacity.value) * 420,
+      },
+      {
+        scale: modalScale.value,
+      },
+    ],
+  };
+});
 
   // ── Editable timer ────────────────────────────────────────────────────────
   const currentDuration = mode === 'focus' ? focusDurationSeconds : breakDurationSeconds;
@@ -112,15 +150,48 @@ export default function FocusScreen() {
     setBreakSecsIdx(bi.secsIdx);
     // Open to the current mode's tab
     setEditTab(mode);
+
+    modalScale.value = 1;
+    modalOpacity.value = 0;
+
     setEditVisible(true);
+
+    requestAnimationFrame(() => {
+  modalScale.value = withSpring(1, {
+    damping: 18,
+    stiffness: 140,
+    mass: 1,
+  });
+
+  modalOpacity.value = withTiming(1, {
+    duration: 260,
+    easing: Easing.out(Easing.cubic),
+  });
+});
   };
+
+  const closeEditor = () => {
+  modalOpacity.value = withTiming(0, {
+    duration: 220,
+    easing: Easing.in(Easing.cubic),
+  });
+
+  modalScale.value = withTiming(0.92, {
+    duration: 220,
+    easing: Easing.in(Easing.cubic),
+  });
+
+  setTimeout(() => {
+    setEditVisible(false);
+  }, 220);
+};
 
   const confirmEdit = () => {
     const focusTotal = indicesToSecs(focusMinsIdx, focusSecsIdx);
     const breakTotal = indicesToSecs(breakMinsIdx, breakSecsIdx);
     if (focusTotal > 0) setFocusDurationSeconds(focusTotal);
     if (breakTotal > 0) setBreakDurationSeconds(breakTotal);
-    setEditVisible(false);
+    closeEditor();
   };
 
   useEffect(() => {
@@ -152,9 +223,9 @@ export default function FocusScreen() {
       </View>
 
       {/* MODE */}
-      <Text style={styles.modeText}>
-        {mode === 'focus' ? 'DEEP WORK' : 'BREAK'}
-      </Text>
+      <Animated.Text style={[styles.modeText, animatedModeTextStyle]}>
+        {displayedMode === 'focus' ? 'DEEP WORK' : 'BREAK'}
+      </Animated.Text>
 
       {/* TIMER */}
       <View style={styles.timerWrapper}>
@@ -217,86 +288,88 @@ export default function FocusScreen() {
       <Modal
         visible={editVisible}
         transparent
-        animationType="slide"
-        onRequestClose={() => setEditVisible(false)}
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={closeEditor}
       >
-        <TouchableWithoutFeedback onPress={() => setEditVisible(false)}>
-          <View style={styles.modalBackdrop}>
-            <TouchableWithoutFeedback onPress={() => { }}>
-              <View style={styles.modalCard}>
-                <View style={styles.modalHandle} />
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={closeEditor}
+          />
 
-                <Text style={styles.modalTitle}>SET DURATION</Text>
+          <Animated.View style={[styles.modalCard, animatedModalStyle]}>
+            <View style={styles.modalHandle} />
 
-                {/* Focus / Break tab switcher */}
-                <View style={styles.tabRow}>
-                  <Pressable
-                    style={[styles.tab, editTab === 'focus' && styles.tabActive]}
-                    onPress={() => setEditTab('focus')}
-                  >
-                    <Text style={[styles.tabText, editTab === 'focus' && styles.tabTextActive]}>
-                      FOCUS
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.tab, editTab === 'break' && styles.tabActive]}
-                    onPress={() => setEditTab('break')}
-                  >
-                    <Text style={[styles.tabText, editTab === 'break' && styles.tabTextActive]}>
-                      BREAK
-                    </Text>
-                  </Pressable>
-                </View>
+            <Text style={styles.modalTitle}>SET DURATION</Text>
 
-                {/* Wheel pickers */}
-                <View style={styles.pickerRow}>
-                  {editTab === 'focus' ? (
-                    <>
-                      <WheelPicker
-                        items={MINUTES}
-                        selectedIndex={focusMinsIdx}
-                        onChange={setFocusMinsIdx}
-                        width={100}
-                      />
-                      <Text style={styles.pickerSeparator}>:</Text>
-                      <WheelPicker
-                        items={SECONDS}
-                        selectedIndex={focusSecsIdx}
-                        onChange={setFocusSecsIdx}
-                        width={100}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <WheelPicker
-                        items={MINUTES}
-                        selectedIndex={breakMinsIdx}
-                        onChange={setBreakMinsIdx}
-                        width={100}
-                      />
-                      <Text style={styles.pickerSeparator}>:</Text>
-                      <WheelPicker
-                        items={SECONDS}
-                        selectedIndex={breakSecsIdx}
-                        onChange={setBreakSecsIdx}
-                        width={100}
-                      />
-                    </>
-                  )}
-                </View>
+            {/* Focus / Break tab switcher */}
+            <View style={styles.tabRow}>
+              <Pressable
+                style={[styles.tab, editTab === 'focus' && styles.tabActive]}
+                onPress={() => setEditTab('focus')}
+              >
+                <Text style={[styles.tabText, editTab === 'focus' && styles.tabTextActive]}>
+                  FOCUS
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.tab, editTab === 'break' && styles.tabActive]}
+                onPress={() => setEditTab('break')}
+              >
+                <Text style={[styles.tabText, editTab === 'break' && styles.tabTextActive]}>
+                  BREAK
+                </Text>
+              </Pressable>
+            </View>
 
-                <View style={styles.pickerLabels}>
-                  <Text style={styles.pickerLabel}>MIN</Text>
-                  <Text style={styles.pickerLabel}>SEC</Text>
-                </View>
+            {/* Wheel pickers */}
+            <View style={styles.pickerRow}>
+              {editTab === 'focus' ? (
+                <>
+                  <WheelPicker
+                    items={MINUTES}
+                    selectedIndex={focusMinsIdx}
+                    onChange={setFocusMinsIdx}
+                    width={100}
+                  />
+                  <Text style={styles.pickerSeparator}>:</Text>
+                  <WheelPicker
+                    items={SECONDS}
+                    selectedIndex={focusSecsIdx}
+                    onChange={setFocusSecsIdx}
+                    width={100}
+                  />
+                </>
+              ) : (
+                <>
+                  <WheelPicker
+                    items={MINUTES}
+                    selectedIndex={breakMinsIdx}
+                    onChange={setBreakMinsIdx}
+                    width={100}
+                  />
+                  <Text style={styles.pickerSeparator}>:</Text>
+                  <WheelPicker
+                    items={SECONDS}
+                    selectedIndex={breakSecsIdx}
+                    onChange={setBreakSecsIdx}
+                    width={100}
+                  />
+                </>
+              )}
+            </View>
 
-                <Pressable style={styles.confirmBtn} onPress={confirmEdit}>
-                  <Text style={styles.confirmText}>CONFIRM</Text>
-                </Pressable>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
+            <View style={styles.pickerLabels}>
+              <Text style={styles.pickerLabel}>MIN</Text>
+              <Text style={styles.pickerLabel}>SEC</Text>
+            </View>
+
+            <Pressable style={styles.confirmBtn} onPress={confirmEdit}>
+              <Text style={styles.confirmText}>CONFIRM</Text>
+            </Pressable>
+          </Animated.View>
+        </View>
       </Modal>
     </Animated.View>
   );
@@ -424,12 +497,15 @@ const styles = StyleSheet.create({
   // ── Modal ────────────────────────────────────────────────────────────────
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    paddingBottom: 0,
+    alignItems: 'stretch',
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.72)',
   },
 
   modalCard: {
     backgroundColor: '#0D0D0D',
+    minHeight: 520,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderTopWidth: 1,
@@ -437,6 +513,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingTop: 16,
     paddingBottom: 48,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 30,
+    shadowOffset: {
+      width: 0,
+      height: -8,
+    },
+    elevation: 30,
     alignItems: 'center',
   },
 
@@ -474,7 +559,15 @@ const styles = StyleSheet.create({
   },
 
   tabActive: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#232323',
+    shadowColor: '#FFF',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    elevation: 3,
   },
 
   tabText: {
@@ -494,6 +587,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     marginBottom: 12,
+    zIndex: 10,
+    overflow: 'visible',
   },
 
   pickerSeparator: {
