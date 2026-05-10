@@ -22,9 +22,13 @@ export default function SettingsScreen() {
   const authLoading = useSettingsStore((state) => state.authLoading);
   const dndEnabled = useSettingsStore((state) => state.dndEnabled);
   const focusDurationSeconds = useTimerStore((state) => state.focusDurationSeconds);
-  const breakDurationSeconds = useTimerStore((state) => state.breakDurationSeconds);
+  const shortBreakDurationSeconds = useTimerStore((state) => state.shortBreakDurationSeconds);
+  const longBreakDurationSeconds = useTimerStore((state) => state.longBreakDurationSeconds);
+  const longBreakInterval = useSettingsStore((state) => state.longBreakInterval);
   const setFocusDurationMinutes = useTimerStore((state) => state.setFocusDurationMinutes);
-  const setBreakDurationMinutes = useTimerStore((state) => state.setBreakDurationMinutes);
+  const setShortBreakDurationMinutes = useTimerStore((state) => state.setShortBreakDurationMinutes);
+  const setLongBreakDurationMinutes = useTimerStore((state) => state.setLongBreakDurationMinutes);
+  const setLongBreakInterval = useSettingsStore((state) => state.setLongBreakInterval);
   const dndStatus = getDndStatus();
 
   const toggleDnd = (enabled: boolean) => {
@@ -40,17 +44,47 @@ export default function SettingsScreen() {
     }
   };
 
-  const updateBreakMinutes = (value: string) => {
+  const updateShortBreakMinutes = (value: string) => {
     const minutes = clampMinutes(value);
     const seconds = minutes * 60;
-    setBreakDurationMinutes(minutes);
+    setShortBreakDurationMinutes(minutes);
     if (userId) {
-      void updateUserTimerSettings(userId, { breakDurationSeconds: seconds });
+      void updateUserTimerSettings(userId, { shortBreakDurationSeconds: seconds });
+    }
+  };
+
+  const updateLongBreakMinutes = (value: string) => {
+    const minutes = clampMinutes(value);
+    const seconds = minutes * 60;
+    setLongBreakDurationMinutes(minutes);
+    if (userId) {
+      void updateUserTimerSettings(userId, { longBreakDurationSeconds: seconds });
+    }
+  };
+
+  const updateLongBreakInterval = (value: string) => {
+    // Allow empty string for better UX while typing
+    if (value === '') {
+      setLongBreakInterval(1); // Temporary value while typing
+      return;
+    }
+    
+    const numValue = Number(value);
+    if (isNaN(numValue)) return;
+    
+    const interval = Math.min(10, Math.max(1, numValue));
+    setLongBreakInterval(interval);
+    if (userId) {
+      void updateUserTimerSettings(userId, { longBreakInterval: interval });
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.screen}>
+    <ScrollView 
+      contentContainerStyle={styles.screen}
+      showsVerticalScrollIndicator={true}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.title}>Settings</Text>
       <Card style={styles.card}>
         <View style={styles.row}>
@@ -96,23 +130,61 @@ export default function SettingsScreen() {
             selectTextOnFocus
             style={styles.numberInput}
             value={String(Math.round(focusDurationSeconds / 60))}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="done"
           />
         </View>
         <View style={styles.durationRow}>
           <View style={styles.rowText}>
-            <Text style={styles.label}>Break minutes</Text>
-            <Text style={styles.value}>Recovery time after focus</Text>
+            <Text style={styles.label}>Short break minutes</Text>
+            <Text style={styles.value}>Recovery time after most pomodoros</Text>
           </View>
           <TextInput
             keyboardType="number-pad"
             maxLength={3}
-            onChangeText={updateBreakMinutes}
+            onChangeText={updateShortBreakMinutes}
             selectTextOnFocus
             style={styles.numberInput}
-            value={String(Math.round(breakDurationSeconds / 60))}
+            value={String(Math.round(shortBreakDurationSeconds / 60))}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="done"
           />
         </View>
-      </Card>
+        <View style={styles.durationRow}>
+          <View style={styles.rowText}>
+            <Text style={styles.label}>Long break minutes</Text>
+            <Text style={styles.value}>Extended recovery after 4 pomodoros</Text>
+          </View>
+          <TextInput
+            keyboardType="number-pad"
+            maxLength={3}
+            onChangeText={updateLongBreakMinutes}
+            selectTextOnFocus
+            style={styles.numberInput}
+            value={String(Math.round(longBreakDurationSeconds / 60))}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="done"
+          />
+        </View>        <View style={styles.durationRow}>
+          <View style={styles.rowText}>
+            <Text style={styles.label}>Long break intervals</Text>
+            <Text style={styles.value}>Focus sessions before a long break (1-10)</Text>
+          </View>
+          <TextInput
+            keyboardType="number-pad"
+            maxLength={2}
+            onChangeText={updateLongBreakInterval}
+            selectTextOnFocus
+            style={styles.numberInput}
+            value={String(longBreakInterval)}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="done"
+          />
+        </View>      </Card>
     </ScrollView>
   );
 }
@@ -120,8 +192,10 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: COLORS.background,
+    flexGrow: 1,
     gap: 18,
     padding: 20,
+    paddingBottom: 40,
     paddingTop: 64,
   },
   title: {

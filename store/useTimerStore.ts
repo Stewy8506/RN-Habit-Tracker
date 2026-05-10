@@ -7,15 +7,20 @@ type TimerState = {
   mode: FocusMode;
   secondsLeft: number;
   focusDurationSeconds: number;
-  breakDurationSeconds: number;
+  shortBreakDurationSeconds: number;
+  longBreakDurationSeconds: number;
+  completedPomodoros: number;
   isRunning: boolean;
   selectedTaskId: string | null;
   setMode: (mode: FocusMode, secondsLeft: number) => void;
   setSecondsLeft: (secondsLeft: number) => void;
   setFocusDurationSeconds: (seconds: number) => void;
-  setBreakDurationSeconds: (seconds: number) => void;
+  setShortBreakDurationSeconds: (seconds: number) => void;
+  setLongBreakDurationSeconds: (seconds: number) => void;
   setFocusDurationMinutes: (minutes: number) => void;
-  setBreakDurationMinutes: (minutes: number) => void;
+  setShortBreakDurationMinutes: (minutes: number) => void;
+  setLongBreakDurationMinutes: (minutes: number) => void;
+  incrementCompletedPomodoros: () => void;
   setIsRunning: (isRunning: boolean) => void;
   setSelectedTaskId: (taskId: string | null) => void;
   reset: () => void;
@@ -25,7 +30,9 @@ export const useTimerStore = create<TimerState>((set) => ({
   mode: 'focus',
   secondsLeft: FOCUS_DURATION_SECONDS,
   focusDurationSeconds: FOCUS_DURATION_SECONDS,
-  breakDurationSeconds: 5 * 60,
+  shortBreakDurationSeconds: 5 * 60,
+  longBreakDurationSeconds: 15 * 60,
+  completedPomodoros: 0,
   isRunning: false,
   selectedTaskId: null,
   setMode: (mode, secondsLeft) => set({ mode, secondsLeft }),
@@ -36,11 +43,17 @@ export const useTimerStore = create<TimerState>((set) => ({
       secondsLeft:
         state.mode === 'focus' && !state.isRunning ? focusDurationSeconds : state.secondsLeft,
     })),
-  setBreakDurationSeconds: (breakDurationSeconds) =>
+  setShortBreakDurationSeconds: (shortBreakDurationSeconds) =>
     set((state) => ({
-      breakDurationSeconds,
+      shortBreakDurationSeconds,
       secondsLeft:
-        state.mode === 'break' && !state.isRunning ? breakDurationSeconds : state.secondsLeft,
+        state.mode === 'shortBreak' && !state.isRunning ? shortBreakDurationSeconds : state.secondsLeft,
+    })),
+  setLongBreakDurationSeconds: (longBreakDurationSeconds) =>
+    set((state) => ({
+      longBreakDurationSeconds,
+      secondsLeft:
+        state.mode === 'longBreak' && !state.isRunning ? longBreakDurationSeconds : state.secondsLeft,
     })),
   setFocusDurationMinutes: (minutes) =>
     set((state) => {
@@ -51,15 +64,25 @@ export const useTimerStore = create<TimerState>((set) => ({
           state.mode === 'focus' && !state.isRunning ? focusDurationSeconds : state.secondsLeft,
       };
     }),
-  setBreakDurationMinutes: (minutes) =>
+  setShortBreakDurationMinutes: (minutes) =>
     set((state) => {
-      const breakDurationSeconds = Math.round(minutes * 60);
+      const shortBreakDurationSeconds = Math.round(minutes * 60);
       return {
-        breakDurationSeconds,
+        shortBreakDurationSeconds,
         secondsLeft:
-          state.mode === 'break' && !state.isRunning ? breakDurationSeconds : state.secondsLeft,
+          state.mode === 'shortBreak' && !state.isRunning ? shortBreakDurationSeconds : state.secondsLeft,
       };
     }),
+  setLongBreakDurationMinutes: (minutes) =>
+    set((state) => {
+      const longBreakDurationSeconds = Math.round(minutes * 60);
+      return {
+        longBreakDurationSeconds,
+        secondsLeft:
+          state.mode === 'longBreak' && !state.isRunning ? longBreakDurationSeconds : state.secondsLeft,
+      };
+    }),
+  incrementCompletedPomodoros: () => set((state) => ({ completedPomodoros: state.completedPomodoros + 1 })),
   setIsRunning: (isRunning) => set({ isRunning }),
   setSelectedTaskId: (selectedTaskId) => set({ selectedTaskId }),
   reset: () =>
@@ -67,5 +90,6 @@ export const useTimerStore = create<TimerState>((set) => ({
       mode: 'focus',
       secondsLeft: state.focusDurationSeconds,
       isRunning: false,
+      completedPomodoros: 0,
     })),
 }));

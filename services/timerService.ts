@@ -4,9 +4,17 @@ import { FocusMode } from '@/types/session';
 export function getModeDuration(
   mode: FocusMode,
   focusDurationSeconds: number,
-  breakDurationSeconds: number,
+  shortBreakDurationSeconds: number,
+  longBreakDurationSeconds: number,
 ) {
-  return mode === 'focus' ? focusDurationSeconds : breakDurationSeconds;
+  switch (mode) {
+    case 'focus':
+      return focusDurationSeconds;
+    case 'shortBreak':
+      return shortBreakDurationSeconds;
+    case 'longBreak':
+      return longBreakDurationSeconds;
+  }
 }
 
 export async function saveCompletedFocusSession(

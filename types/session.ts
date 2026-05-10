@@ -1,6 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 
-export type FocusMode = 'focus' | 'break';
+export type FocusMode = 'focus' | 'shortBreak' | 'longBreak';
 
 export type FocusSession = {
   id: string;

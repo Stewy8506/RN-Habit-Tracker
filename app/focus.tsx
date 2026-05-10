@@ -9,12 +9,10 @@ import {
   View,
 } from 'react-native';
 import Animated, {
-  Easing,
-  interpolateColor,
-  useAnimatedStyle,
+  Easing, interpolateColor, useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
+  withTiming
 } from 'react-native-reanimated';
 
 import { CircularProgressRing } from '@/components/Timer/CircularProgressRing';
@@ -23,6 +21,7 @@ import { useTimer } from '@/hooks/useTimer';
 import { getModeDuration } from '@/services/timerService';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
+import { useRouter } from 'expo-router';
 
 // ── Picker data ───────────────────────────────────────────────────────────────
 const MINUTES = Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0'));
@@ -46,6 +45,7 @@ function indicesToSecs(minsIdx: number, secsIdx: number) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function FocusScreen() {
+  const router = useRouter();
   const userId = useSettingsStore((state) => state.userId);
 
   const [todayStats, setTodayStats] = useState({
@@ -57,7 +57,8 @@ export default function FocusScreen() {
     mode,
     secondsLeft,
     focusDurationSeconds,
-    breakDurationSeconds,
+    shortBreakDurationSeconds,
+    longBreakDurationSeconds,
     isRunning,
     start,
     pause,
@@ -66,10 +67,11 @@ export default function FocusScreen() {
   } = useTimer();
 
   const setFocusDurationSeconds = useTimerStore((s) => s.setFocusDurationSeconds);
-  const setBreakDurationSeconds = useTimerStore((s) => s.setBreakDurationSeconds);
+  const setShortBreakDurationSeconds = useTimerStore((s) => s.setShortBreakDurationSeconds);
+  const setLongBreakDurationSeconds = useTimerStore((s) => s.setLongBreakDurationSeconds);
 
   const progress =
-    secondsLeft / getModeDuration(mode, focusDurationSeconds, breakDurationSeconds);
+    secondsLeft / getModeDuration(mode, focusDurationSeconds, shortBreakDurationSeconds, longBreakDurationSeconds);
 
   // ── Mode transition animation ─────────────────────────────────────────────
   const transition = useSharedValue(0);
@@ -90,14 +92,15 @@ export default function FocusScreen() {
     }, 300);
 
     // Animate background
-    transition.value = withTiming(mode === 'focus' ? 0 : 1, { duration: 800 });
+    const targetValue = mode === 'focus' ? 0 : mode === 'shortBreak' ? 0.5 : 1;
+    transition.value = withTiming(targetValue, { duration: 800 });
   }, [mode]);
 
   const animatedBgStyle = useAnimatedStyle(() => {
     const backgroundColor = interpolateColor(
       transition.value,
-      [0, 1],
-      ['#000000', '#080c10']
+      [0, 0.5, 1],
+      ['#000000', '#080c10', '#0a1a0a']
     );
     return { backgroundColor };
   });
@@ -125,17 +128,23 @@ export default function FocusScreen() {
 });
 
   // ── Editable timer ────────────────────────────────────────────────────────
-  const currentDuration = mode === 'focus' ? focusDurationSeconds : breakDurationSeconds;
+  const currentDuration = mode === 'focus' 
+    ? focusDurationSeconds 
+    : mode === 'shortBreak' 
+      ? shortBreakDurationSeconds 
+      : longBreakDurationSeconds;
   const isIdle = !isRunning && secondsLeft === currentDuration;
 
   // Which tab is active in the editor
-  const [editTab, setEditTab] = useState<'focus' | 'break'>('focus');
+  const [editTab, setEditTab] = useState<'focus' | 'shortBreak' | 'longBreak'>('focus');
 
   // Wheel indices — kept for both tabs simultaneously
   const [focusMinsIdx, setFocusMinsIdx] = useState(0);
   const [focusSecsIdx, setFocusSecsIdx] = useState(0);
-  const [breakMinsIdx, setBreakMinsIdx] = useState(0);
-  const [breakSecsIdx, setBreakSecsIdx] = useState(0);
+  const [shortBreakMinsIdx, setShortBreakMinsIdx] = useState(0);
+  const [shortBreakSecsIdx, setShortBreakSecsIdx] = useState(0);
+  const [longBreakMinsIdx, setLongBreakMinsIdx] = useState(0);
+  const [longBreakSecsIdx, setLongBreakSecsIdx] = useState(0);
 
   const [editVisible, setEditVisible] = useState(false);
 
@@ -143,11 +152,14 @@ export default function FocusScreen() {
     if (!isIdle) return;
     // Pre-populate from current store values
     const fi = secsToIndices(focusDurationSeconds);
-    const bi = secsToIndices(breakDurationSeconds);
+    const sbi = secsToIndices(shortBreakDurationSeconds);
+    const lbi = secsToIndices(longBreakDurationSeconds);
     setFocusMinsIdx(fi.minsIdx);
     setFocusSecsIdx(fi.secsIdx);
-    setBreakMinsIdx(bi.minsIdx);
-    setBreakSecsIdx(bi.secsIdx);
+    setShortBreakMinsIdx(sbi.minsIdx);
+    setShortBreakSecsIdx(sbi.secsIdx);
+    setLongBreakMinsIdx(lbi.minsIdx);
+    setLongBreakSecsIdx(lbi.secsIdx);
     // Open to the current mode's tab
     setEditTab(mode);
 
@@ -188,9 +200,11 @@ export default function FocusScreen() {
 
   const confirmEdit = () => {
     const focusTotal = indicesToSecs(focusMinsIdx, focusSecsIdx);
-    const breakTotal = indicesToSecs(breakMinsIdx, breakSecsIdx);
+    const shortBreakTotal = indicesToSecs(shortBreakMinsIdx, shortBreakSecsIdx);
+    const longBreakTotal = indicesToSecs(longBreakMinsIdx, longBreakSecsIdx);
     if (focusTotal > 0) setFocusDurationSeconds(focusTotal);
-    if (breakTotal > 0) setBreakDurationSeconds(breakTotal);
+    if (shortBreakTotal > 0) setShortBreakDurationSeconds(shortBreakTotal);
+    if (longBreakTotal > 0) setLongBreakDurationSeconds(longBreakTotal);
     closeEditor();
   };
 
@@ -217,14 +231,15 @@ export default function FocusScreen() {
     <Animated.View style={[styles.root, animatedBgStyle]}>
       {/* TOP BAR */}
       <View style={styles.topBar}>
-        <Ionicons name="menu" size={28} color="#666" />
-        <Text style={styles.focusTitle}>FOCUS</Text>
+        <Pressable onPress={() => router.back()}>
+          <Ionicons name="chevron-back-outline" size={28} color="#666" />
+        </Pressable>
         <Ionicons name="options-outline" size={26} color="#666" />
       </View>
 
       {/* MODE */}
       <Animated.Text style={[styles.modeText, animatedModeTextStyle]}>
-        {displayedMode === 'focus' ? 'DEEP WORK' : 'BREAK'}
+        {displayedMode === 'focus' ? 'DEEP FOCUS' : displayedMode === 'shortBreak' ? 'SHORT BREAK' : 'LONG BREAK'}
       </Animated.Text>
 
       {/* TIMER */}
@@ -303,7 +318,7 @@ export default function FocusScreen() {
 
             <Text style={styles.modalTitle}>SET DURATION</Text>
 
-            {/* Focus / Break tab switcher */}
+            {/* Focus / Short Break / Long Break tab switcher */}
             <View style={styles.tabRow}>
               <Pressable
                 style={[styles.tab, editTab === 'focus' && styles.tabActive]}
@@ -314,11 +329,19 @@ export default function FocusScreen() {
                 </Text>
               </Pressable>
               <Pressable
-                style={[styles.tab, editTab === 'break' && styles.tabActive]}
-                onPress={() => setEditTab('break')}
+                style={[styles.tab, editTab === 'shortBreak' && styles.tabActive]}
+                onPress={() => setEditTab('shortBreak')}
               >
-                <Text style={[styles.tabText, editTab === 'break' && styles.tabTextActive]}>
-                  BREAK
+                <Text style={[styles.tabText, editTab === 'shortBreak' && styles.tabTextActive]}>
+                  SHORT BREAK
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.tab, editTab === 'longBreak' && styles.tabActive]}
+                onPress={() => setEditTab('longBreak')}
+              >
+                <Text style={[styles.tabText, editTab === 'longBreak' && styles.tabTextActive]}>
+                  LONG BREAK
                 </Text>
               </Pressable>
             </View>
@@ -341,19 +364,35 @@ export default function FocusScreen() {
                     width={100}
                   />
                 </>
-              ) : (
+              ) : editTab === 'shortBreak' ? (
                 <>
                   <WheelPicker
                     items={MINUTES}
-                    selectedIndex={breakMinsIdx}
-                    onChange={setBreakMinsIdx}
+                    selectedIndex={shortBreakMinsIdx}
+                    onChange={setShortBreakMinsIdx}
                     width={100}
                   />
                   <Text style={styles.pickerSeparator}>:</Text>
                   <WheelPicker
                     items={SECONDS}
-                    selectedIndex={breakSecsIdx}
-                    onChange={setBreakSecsIdx}
+                    selectedIndex={shortBreakSecsIdx}
+                    onChange={setShortBreakSecsIdx}
+                    width={100}
+                  />
+                </>
+              ) : (
+                <>
+                  <WheelPicker
+                    items={MINUTES}
+                    selectedIndex={longBreakMinsIdx}
+                    onChange={setLongBreakMinsIdx}
+                    width={100}
+                  />
+                  <Text style={styles.pickerSeparator}>:</Text>
+                  <WheelPicker
+                    items={SECONDS}
+                    selectedIndex={longBreakSecsIdx}
+                    onChange={setLongBreakSecsIdx}
                     width={100}
                   />
                 </>

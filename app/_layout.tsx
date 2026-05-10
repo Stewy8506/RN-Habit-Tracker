@@ -6,8 +6,8 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ensureAnonymousAuth, subscribeToAuth } from '@/services/authService';
-import { listenToUserSettings, upsertUser } from '@/services/firestoreService';
 import { subscribeToDnd } from '@/services/dndService';
+import { listenToUserSettings, upsertUser } from '@/services/firestoreService';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
 
@@ -22,7 +22,9 @@ export default function RootLayout() {
   const setDndEnabled = useSettingsStore((state) => state.setDndEnabled);
   const userId = useSettingsStore((state) => state.userId);
   const setFocusDurationSeconds = useTimerStore((state) => state.setFocusDurationSeconds);
-  const setBreakDurationSeconds = useTimerStore((state) => state.setBreakDurationSeconds);
+  const setShortBreakDurationSeconds = useTimerStore((state) => state.setShortBreakDurationSeconds);
+  const setLongBreakDurationSeconds = useTimerStore((state) => state.setLongBreakDurationSeconds);
+  const setLongBreakInterval = useSettingsStore((state) => state.setLongBreakInterval);
 
   useEffect(() => {
     const unsubscribeAuth = subscribeToAuth((user) => {
@@ -53,13 +55,19 @@ export default function RootLayout() {
         if (settings.focusDurationSeconds) {
           setFocusDurationSeconds(settings.focusDurationSeconds);
         }
-        if (settings.breakDurationSeconds) {
-          setBreakDurationSeconds(settings.breakDurationSeconds);
+        if (settings.shortBreakDurationSeconds) {
+          setShortBreakDurationSeconds(settings.shortBreakDurationSeconds);
+        }
+        if (settings.longBreakDurationSeconds) {
+          setLongBreakDurationSeconds(settings.longBreakDurationSeconds);
+        }
+        if (settings.longBreakInterval) {
+          setLongBreakInterval(settings.longBreakInterval);
         }
       },
       () => undefined,
     );
-  }, [setBreakDurationSeconds, setFocusDurationSeconds, userId]);
+  }, [setFocusDurationSeconds, setShortBreakDurationSeconds, setLongBreakDurationSeconds, setLongBreakInterval, userId]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

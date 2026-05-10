@@ -1,17 +1,17 @@
 import {
-  Timestamp,
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  increment,
-  onSnapshot,
-  orderBy,
-  query,
-  runTransaction,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
+    Timestamp,
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    increment,
+    onSnapshot,
+    orderBy,
+    query,
+    runTransaction,
+    serverTimestamp,
+    setDoc,
+    updateDoc,
 } from 'firebase/firestore';
 
 import { db } from '@/config/firebase';
@@ -43,7 +43,12 @@ export async function upsertUser(userId: string) {
 
 export function listenToUserSettings(
   userId: string,
-  onNext: (settings: { focusDurationSeconds?: number; breakDurationSeconds?: number }) => void,
+  onNext: (settings: { 
+    focusDurationSeconds?: number; 
+    shortBreakDurationSeconds?: number;
+    longBreakDurationSeconds?: number;
+    longBreakInterval?: number;
+  }) => void,
   onError: (error: Error) => void,
 ) {
   return onSnapshot(
@@ -53,8 +58,12 @@ export function listenToUserSettings(
       onNext({
         focusDurationSeconds:
           typeof data?.focusDurationSeconds === 'number' ? data.focusDurationSeconds : undefined,
-        breakDurationSeconds:
-          typeof data?.breakDurationSeconds === 'number' ? data.breakDurationSeconds : undefined,
+        shortBreakDurationSeconds:
+          typeof data?.shortBreakDurationSeconds === 'number' ? data.shortBreakDurationSeconds : undefined,
+        longBreakDurationSeconds:
+          typeof data?.longBreakDurationSeconds === 'number' ? data.longBreakDurationSeconds : undefined,
+        longBreakInterval:
+          typeof data?.longBreakInterval === 'number' ? data.longBreakInterval : undefined,
       });
     },
     onError,
@@ -63,7 +72,12 @@ export function listenToUserSettings(
 
 export async function updateUserTimerSettings(
   userId: string,
-  settings: { focusDurationSeconds?: number; breakDurationSeconds?: number },
+  settings: { 
+    focusDurationSeconds?: number; 
+    shortBreakDurationSeconds?: number;
+    longBreakDurationSeconds?: number;
+    longBreakInterval?: number;
+  },
 ) {
   await setDoc(
     userDoc(userId),
