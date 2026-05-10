@@ -4,9 +4,24 @@ import { Linking, Platform } from 'react-native';
 type DndControllerModule = {
   isAvailable: () => boolean;
   hasPolicyAccess: () => boolean;
+  getStatus: () => NativeDndStatus;
   openPolicyAccessSettings: () => boolean;
   enableDnd: () => boolean;
   disableDnd: () => boolean;
+};
+
+export type NativeDndStatus = {
+  available: boolean;
+  policyAccessGranted: boolean;
+  interruptionFilter: number;
+  lastError: string | null;
+};
+
+const unavailableStatus: NativeDndStatus = {
+  available: false,
+  policyAccessGranted: false,
+  interruptionFilter: 0,
+  lastError: null,
 };
 
 const DndController = requireOptionalNativeModule<DndControllerModule>('DndController');
@@ -17,6 +32,14 @@ export function isNativeDndAvailable() {
 
 export function hasDndPolicyAccess() {
   return DndController?.hasPolicyAccess() === true;
+}
+
+export function getNativeDndStatus() {
+  if (Platform.OS !== 'android') {
+    return unavailableStatus;
+  }
+
+  return DndController?.getStatus() ?? unavailableStatus;
 }
 
 export async function openDndPolicyAccessSettings() {
@@ -33,7 +56,11 @@ export async function openDndPolicyAccessSettings() {
 }
 
 export function enableNativeDnd() {
-  return DndController?.enableDnd() === true;
+  if (DndController?.enableDnd() !== true) {
+    return false;
+  }
+
+  return getNativeDndStatus().interruptionFilter === 3;
 }
 
 export function disableNativeDnd() {

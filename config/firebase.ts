@@ -1,4 +1,4 @@
-import { createAsyncStorage } from '@react-native-async-storage/async-storage';
+import AsyncStorage, { type AsyncStorageStatic } from '@react-native-async-storage/async-storage';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, initializeAuth, type Dependencies } from 'firebase/auth';
 import * as FirebaseAuth from 'firebase/auth';
@@ -17,18 +17,20 @@ const firebaseConfig = {
 export const firebaseApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 export const db = getFirestore(firebaseApp);
 
-const appStorage = createAsyncStorage('productivity-app-auth');
-
 function createAuth() {
   const getReactNativePersistence = (
     FirebaseAuth as typeof FirebaseAuth & {
-      getReactNativePersistence: (storage: typeof appStorage) => Dependencies['persistence'];
+      getReactNativePersistence?: (storage: AsyncStorageStatic) => Dependencies['persistence'];
     }
   ).getReactNativePersistence;
 
   try {
+    if (!getReactNativePersistence) {
+      return getAuth(firebaseApp);
+    }
+
     return initializeAuth(firebaseApp, {
-      persistence: getReactNativePersistence(appStorage),
+      persistence: getReactNativePersistence(AsyncStorage),
     });
   } catch {
     return getAuth(firebaseApp);

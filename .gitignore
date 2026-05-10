@@ -41,3 +41,13 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Android build files
+android/build/
+**/android/build/
+
+# Expo / React Native
+node_modules/
+.expo/
+dist/
+build/

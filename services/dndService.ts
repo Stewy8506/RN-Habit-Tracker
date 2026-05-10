@@ -1,6 +1,7 @@
 import {
   disableNativeDnd,
   enableNativeDnd,
+  getNativeDndStatus,
   hasDndPolicyAccess,
   isNativeDndAvailable,
   openDndPolicyAccessSettings,
@@ -18,7 +19,7 @@ function emit() {
 
 export async function enableDnd() {
   nativeControlled = enableNativeDnd();
-  enabled = nativeControlled || true;
+  enabled = isNativeDndAvailable() ? nativeControlled : true;
   emit();
   return nativeControlled;
 }
@@ -35,11 +36,15 @@ export function getDndEnabled() {
 }
 
 export function getDndStatus() {
+  const nativeStatus = getNativeDndStatus();
+
   return {
     enabled,
     nativeAvailable: isNativeDndAvailable(),
     nativeControlled,
     policyAccessGranted: hasDndPolicyAccess(),
+    interruptionFilter: nativeStatus.interruptionFilter,
+    lastError: nativeStatus.lastError,
   };
 }
 
