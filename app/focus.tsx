@@ -78,6 +78,7 @@ export default function FocusScreen() {
   const modeTextOpacity = useSharedValue(1);
   const modeTextScale = useSharedValue(1);
   const [displayedMode, setDisplayedMode] = useState(mode);
+  const [isTransitioningMode, setIsTransitioningMode] = useState(false);
 
   useEffect(() => {
     // Animate mode text
@@ -133,7 +134,10 @@ export default function FocusScreen() {
     : mode === 'shortBreak' 
       ? shortBreakDurationSeconds 
       : longBreakDurationSeconds;
-  const isIdle = !isRunning && secondsLeft === currentDuration;
+  const isIdle =
+  !isRunning &&
+  secondsLeft === currentDuration &&
+  mode === displayedMode;
 
   // Which tab is active in the editor
   const [editTab, setEditTab] = useState<'focus' | 'shortBreak' | 'longBreak'>('focus');
@@ -325,7 +329,7 @@ export default function FocusScreen() {
                 onPress={() => setEditTab('focus')}
               >
                 <Text style={[styles.tabText, editTab === 'focus' && styles.tabTextActive]}>
-                  FOCUS
+                  Focus
                 </Text>
               </Pressable>
               <Pressable
@@ -333,7 +337,7 @@ export default function FocusScreen() {
                 onPress={() => setEditTab('shortBreak')}
               >
                 <Text style={[styles.tabText, editTab === 'shortBreak' && styles.tabTextActive]}>
-                  SHORT BREAK
+                  S.Break
                 </Text>
               </Pressable>
               <Pressable
@@ -341,7 +345,7 @@ export default function FocusScreen() {
                 onPress={() => setEditTab('longBreak')}
               >
                 <Text style={[styles.tabText, editTab === 'longBreak' && styles.tabTextActive]}>
-                  LONG BREAK
+                  L.Break
                 </Text>
               </Pressable>
             </View>

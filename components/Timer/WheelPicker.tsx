@@ -1,5 +1,4 @@
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
   NativeScrollEvent,
@@ -122,28 +121,6 @@ export function WheelPicker({
         pointerEvents="none"
         style={[styles.selectionBand, { top: PADDING, height: ITEM_HEIGHT }]}
       />
-
-      {/* Top fade — wrap in View so LinearGradient doesn't intercept touches */}
-      <View
-        pointerEvents="none"
-        style={[styles.fadeOverlay, { top: 0, height: PADDING }]}
-      >
-        <LinearGradient
-          colors={['#0D0D0D', 'rgba(13,13,13,0)']}
-          style={StyleSheet.absoluteFillObject}
-        />
-      </View>
-
-      {/* Bottom fade */}
-      <View
-        pointerEvents="none"
-        style={[styles.fadeOverlay, { bottom: 0, height: PADDING }]}
-      >
-        <LinearGradient
-          colors={['rgba(13,13,13,0)', '#0D0D0D']}
-          style={StyleSheet.absoluteFillObject}
-        />
-      </View>
     </View>
   );
 }
@@ -178,16 +155,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: 18,
-  },
-
-  fadeOverlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
 });
