@@ -1,86 +1,87 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+    useAnimatedProps,
+    useSharedValue,
+    withTiming,
+} from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
 
-import { COLORS, getColors } from '@/utils/constants';
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 type CircularProgressRingProps = {
   progress: number;
   size?: number;
   strokeWidth?: number;
-  colors?: ReturnType<typeof getColors>;
+  colors?: {
+    primary: string;
+    border: string;
+  };
 };
 
 export function CircularProgressRing({
   progress,
-  size = 280,
-  strokeWidth = 8,
-  colors = COLORS,
+  size = 320,
+  strokeWidth = 5,
+  colors = {
+    primary: '#9CA3AF',
+    border: '#1A1A1A',
+  },
 }: CircularProgressRingProps) {
   const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
+
+  const circumference = 2 * Math.PI * radius;
+
   const animatedProgress = useSharedValue(0);
 
   useEffect(() => {
-    animatedProgress.value = withTiming(Math.max(0, Math.min(1, progress)), {
-      duration: 300,
+    animatedProgress.value = withTiming(progress, {
+      duration: 500,
     });
-  }, [progress, animatedProgress]);
+  }, [progress]);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const rotation = animatedProgress.value * 360;
+  const animatedProps = useAnimatedProps(() => {
     return {
-      transform: [{ rotate: `${rotation}deg` }],
+      strokeDashoffset:
+        circumference * (1 - animatedProgress.value),
     };
   });
 
-  const borderColor = colors.background === '#0F172A' ? '#334155' : '#E5E7EB';
-
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
-      {/* Background circle */}
-      <View
-        style={[
-          styles.circle,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            borderWidth: strokeWidth,
-            borderColor,
-          },
-        ]}
-      />
-      {/* Progress arc */}
-      <Animated.View
-        style={[
-          styles.progressArc,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            borderWidth: strokeWidth,
-            borderColor: 'transparent',
-            borderTopColor: colors.primary,
-            borderRightColor: 'transparent',
-          },
-          animatedStyle,
-        ]}
-      />
+    <View style={styles.container}>
+      <Svg width={size} height={size}>
+        {/* BACKGROUND RING */}
+        <Circle
+          stroke={colors.border}
+          fill="none"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={strokeWidth}
+        />
+
+        {/* PROGRESS RING */}
+        <AnimatedCircle
+          animatedProps={animatedProps}
+          stroke={colors.primary}
+          fill="none"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={`${circumference} ${circumference}`}
+          rotation="-90"
+          origin={`${size / 2}, ${size / 2}`}
+        />
+      </Svg>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-  },
-  circle: {
-    position: 'absolute',
-  },
-  progressArc: {
-    position: 'absolute',
+    alignItems: 'center',
   },
 });
