@@ -1,99 +1,305 @@
-# FOCUS
+# Productivity App
 
-A minimalist deep-work productivity app designed to help you enter flow state and stay consistent.
+A minimalist productivity app designed to help users focus better, manage tasks efficiently, build habits consistently, and eliminate distractions during deep work sessions.
 
-Built with React Native + Expo, FOCUS combines a clean OLED-inspired interface with powerful focus session tracking and habit-building features.
-
----
-
-## Preview
-
-FOCUS is designed around:
-- deep work
-- distraction-free productivity
-- ambient UI aesthetics
-- low visual noise
-- intentional interaction
-
-The interface is heavily inspired by:
-- Nothing OS
-- luxury watch interfaces
-- modern minimalist productivity systems
+Built using React Native, Expo, TypeScript, Zustand, and Firebase.
 
 ---
 
-## Features
+# Features
 
-### Focus Timer
-- Elegant circular focus timer
-- Smooth animated progress ring
-- Ambient glow effects
-- Pomodoro-inspired workflow
+## Pomodoro Focus Timer
 
-### Session Management
-- Start / pause / reset sessions
-- Skip between focus and break modes
-- Configurable session durations
-
-### Productivity Tracking
-- Daily focus statistics
-- Focus streaks
-- Session duration tracking
-
-### Minimalist UI
-- OLED-friendly dark interface
-- Subtle gradients and typography
-- Low-distraction design system
-- Smooth animations
+- 25-minute focus sessions
+- 5-minute break sessions
+- Start / Pause / Reset controls
+- Auto-switch between focus and break modes
+- Attach tasks to focus sessions
+- Session history tracking
+- Automatic Firestore sync
 
 ---
 
-## Tech Stack
+## Task Manager
 
-### Frontend
+- Create tasks
+- Delete tasks
+- Mark tasks complete
+- Attach Pomodoro sessions to tasks
+- Real-time Firestore synchronization
+- Track Pomodoro count per task
+
+---
+
+## Habit Tracker
+
+- Daily habit check-ins
+- Streak tracking
+- Automatic streak reset logic
+- Real-time syncing with Firestore
+
+---
+
+## DND (Do Not Disturb)
+
+- Automatically enables during focus sessions
+- Automatically disables after sessions
+- Simulated DND behavior for cross-platform support
+
+---
+
+# Tech Stack
+
+## Frontend
+
 - React Native
 - Expo
 - TypeScript
 
-### Animation & Graphics
-- React Native Reanimated
-- React Native SVG
-- Expo Linear Gradient
+## State Management
 
-### State Management
 - Zustand
+
+## Backend
+
+- Firebase Authentication
+- Cloud Firestore
+
+## Realtime Sync
+
+- Firestore `onSnapshot` listeners
 
 ---
 
-## Installation
-
-Clone the repository:
+# Folder Structure
 
 ```bash
-git clone https://github.com/yourusername/focus-app.git
+productivity-app/
+├── app/
+│   ├── (tabs)/
+│   │   ├── index.tsx
+│   │   ├── tasks.tsx
+│   │   ├── habits.tsx
+│   │   └── settings.tsx
+│   ├── focus.tsx
+│   └── _layout.tsx
+│
+├── components/
+│   ├── Timer/
+│   │   ├── TimerDisplay.tsx
+│   │   ├── TimerControls.tsx
+│   │   └── ProgressRing.tsx
+│   ├── Task/
+│   │   ├── TaskItem.tsx
+│   │   ├── TaskInput.tsx
+│   │   └── TaskList.tsx
+│   ├── Habit/
+│   │   ├── HabitItem.tsx
+│   │   └── HabitList.tsx
+│   └── common/
+│       ├── Button.tsx
+│       ├── Card.tsx
+│       └── Modal.tsx
+│
+├── store/
+│   ├── useTimerStore.ts
+│   ├── useTaskStore.ts
+│   ├── useHabitStore.ts
+│   └── useSettingsStore.ts
+│
+├── services/
+│   ├── timerService.ts
+│   ├── dndService.ts
+│   ├── firestoreService.ts
+│   └── authService.ts
+│
+├── hooks/
+│   ├── useTimer.ts
+│   ├── useTasks.ts
+│   └── useHabits.ts
+│
+├── utils/
+│   ├── constants.ts
+│   ├── time.ts
+│   └── helpers.ts
+│
+├── types/
+│   ├── task.ts
+│   ├── habit.ts
+│   └── session.ts
+│
+├── config/
+│   └── firebase.ts
+│
+├── assets/
+├── app.json
+├── package.json
+└── tsconfig.json
 ```
 
-Move into the project:
+---
+
+# Firebase Setup
+
+## 1. Create Firebase Project
+
+Go to:
 
 ```bash
-cd focus-app
+https://console.firebase.google.com
 ```
 
-Install dependencies:
+Create a new Firebase project.
+
+---
+
+## 2. Enable Authentication
+
+Enable:
+
+- Anonymous Authentication
+
+Authentication → Sign-in Method → Anonymous → Enable
+
+---
+
+## 3. Enable Firestore
+
+Create Firestore Database in production or test mode.
+
+---
+
+## 4. Add Firebase Config
+
+Create:
+
+```bash
+config/firebase.ts
+```
+
+Example:
+
+```ts
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+
+const firebaseConfig = {
+  apiKey: 'YOUR_API_KEY',
+  authDomain: 'YOUR_AUTH_DOMAIN',
+  projectId: 'YOUR_PROJECT_ID',
+  storageBucket: 'YOUR_STORAGE_BUCKET',
+  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+  appId: 'YOUR_APP_ID',
+};
+
+const app = initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
+
+export const db = getFirestore(app);
+```
+
+---
+
+# Firestore Data Model
+
+## Users
+
+```bash
+users/{userId}
+```
+
+---
+
+## Tasks
+
+```bash
+users/{userId}/tasks/{taskId}
+```
+
+```ts
+{
+  title: string;
+  completed: boolean;
+  createdAt: timestamp;
+  pomodoroCount: number;
+  deadline: timestamp | null;
+}
+```
+
+---
+
+## Habits
+
+```bash
+users/{userId}/habits/{habitId}
+```
+
+```ts
+{
+  name: string;
+  streak: number;
+  lastCompleted: timestamp;
+}
+```
+
+---
+
+## Sessions
+
+```bash
+users/{userId}/sessions/{sessionId}
+```
+
+```ts
+{
+  taskId: string | null;
+  duration: number;
+  completed: boolean;
+  createdAt: timestamp;
+}
+```
+
+---
+
+# Installation
+
+## Clone Repository
+
+```bash
+git clone https://github.com/yourusername/productivity-app.git
+```
+
+---
+
+## Install Dependencies
 
 ```bash
 npm install
 ```
 
-Install Expo packages:
+---
+
+## Install Expo Dependencies
 
 ```bash
-npx expo install react-native-svg
 npx expo install react-native-reanimated
+npx expo install react-native-svg
 npx expo install expo-linear-gradient
 ```
 
-Start the development server:
+---
+
+## Install Firebase
+
+```bash
+npm install firebase
+```
+
+---
+
+## Run Project
 
 ```bash
 npx expo start
@@ -101,67 +307,64 @@ npx expo start
 
 ---
 
-## Project Structure
+# Core App Behavior
 
-```bash
-components/
-  Timer/
-    CircularProgressRing.tsx
-    TimerControls.tsx
-    TimerDisplay.tsx
+## Focus Sessions
 
-hooks/
-  useTimer.ts
+When a focus session starts:
 
-store/
-  useTimerStore.ts
-  useSettingsStore.ts
+- Timer begins
+- DND mode activates
+- Session tracking starts
 
-services/
-  timerService.ts
+When the session completes:
 
-screens/
-  FocusScreen.tsx
+- Session saved to Firestore
+- Task Pomodoro count increments
+- DND mode disables
+- Break timer starts automatically
+
+---
+
+# Realtime Sync
+
+The app uses Firestore realtime listeners:
+
+```ts
+onSnapshot()
 ```
 
----
-
-## Design Philosophy
-
-FOCUS is intentionally designed to feel:
-- calm
-- premium
-- restrained
-- immersive
-
-The UI avoids:
-- excessive color
-- unnecessary effects
-- clutter
-- visual fatigue
-
-Every spacing, animation, and typography choice is optimized to keep attention on the task itself.
+This ensures:
+- instant task updates
+- live habit syncing
+- automatic UI refreshes
+- persistent cloud state
 
 ---
 
-## Future Plans
+# UI Design
 
-- Ambient soundscapes
-- Task integration
-- Focus analytics
-- Calendar sync
-- Cross-device sync
-- AI-powered productivity insights
-- Widgets and lockscreen controls
+The UI is designed around:
+- minimalism
+- low visual noise
+- OLED-friendly dark themes
+- clean typography
+- distraction-free interaction
 
 ---
 
-## License
+# Future Improvements
+
+- Push notifications
+- Calendar integration
+- Focus analytics dashboard
+- Cloud sync across devices
+- AI productivity assistant
+- Widgets and lockscreen support
+- Team productivity rooms
+
+---
+
+# License
 
 MIT License
-
----
-
-## Author
-
-Built with focus and intentionality.
