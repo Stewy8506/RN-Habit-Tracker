@@ -168,7 +168,9 @@ export default function SettingsScreen() {
             autoCapitalize="none"
             returnKeyType="done"
           />
-        </View>        <View style={styles.durationRow}>
+        </View>
+
+        <View style={styles.durationRow}>
           <View style={styles.rowText}>
             <Text style={styles.label}>Long break intervals</Text>
             <Text style={styles.value}>Focus sessions before a long break (1-10)</Text>
@@ -184,7 +186,8 @@ export default function SettingsScreen() {
             autoCapitalize="none"
             returnKeyType="done"
           />
-        </View>      </Card>
+        </View>
+      </Card>
     </ScrollView>
   );
 }

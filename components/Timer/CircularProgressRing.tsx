@@ -33,17 +33,6 @@ export function CircularProgressRing({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  // Outer glow layers — positioned so their INNER EDGE
-  // starts exactly at the main ring's OUTER EDGE.
-  // r_glow = radius + strokeWidth/2 + glowWidth/2
-  const tightGlowWidth = 6;
-  const tightGlowRadius = radius + strokeWidth / 2 + tightGlowWidth / 2;
-  const tightGlowCircumference = 2 * Math.PI * tightGlowRadius;
-
-  const wideGlowWidth = 18;
-  const wideGlowRadius = radius + strokeWidth / 2 + tightGlowWidth + wideGlowWidth / 2;
-  const wideGlowCircumference = 2 * Math.PI * wideGlowRadius;
-
   const animatedProgress = useSharedValue(0);
 
   useEffect(() => {
@@ -56,16 +45,8 @@ export function CircularProgressRing({
     strokeDashoffset: circumference * (1 - animatedProgress.value),
   }));
 
-  const tightGlowProps = useAnimatedProps(() => ({
-    strokeDashoffset: tightGlowCircumference * (1 - animatedProgress.value),
-  }));
-
-  const wideGlowProps = useAnimatedProps(() => ({
-    strokeDashoffset: wideGlowCircumference * (1 - animatedProgress.value),
-  }));
-
   // Canvas padding must fit the widest glow layer
-  const padding = wideGlowWidth + tightGlowWidth + 10;
+  const padding = 12;
   const canvasSize = size + padding * 2;
   const center = canvasSize / 2;
 
@@ -83,38 +64,6 @@ export function CircularProgressRing({
           strokeWidth={strokeWidth}
         />
 
-        {/* WIDE OUTER GLOW — furthest out, most diffuse */}
-        <AnimatedCircle
-          animatedProps={wideGlowProps}
-          stroke={colors.primary}
-          fill="none"
-          cx={center}
-          cy={center}
-          r={wideGlowRadius}
-          strokeWidth={wideGlowWidth}
-          strokeLinecap="butt"
-          strokeDasharray={wideGlowCircumference}
-          opacity={0.12}
-          rotation="-90"
-          origin={`${center}, ${center}`}
-        />
-
-        {/* TIGHT OUTER GLOW — just outside the ring edge */}
-        <AnimatedCircle
-          animatedProps={tightGlowProps}
-          stroke={colors.primary}
-          fill="none"
-          cx={center}
-          cy={center}
-          r={tightGlowRadius}
-          strokeWidth={tightGlowWidth}
-          strokeLinecap="butt"
-          strokeDasharray={tightGlowCircumference}
-          opacity={0.35}
-          rotation="-90"
-          origin={`${center}, ${center}`}
-        />
-
         {/* MAIN PROGRESS ARC */}
         <AnimatedCircle
           animatedProps={mainAnimatedProps}
@@ -126,7 +75,7 @@ export function CircularProgressRing({
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
-          opacity={0.8}
+          opacity={1}
           rotation="-90"
           origin={`${center}, ${center}`}
         />
