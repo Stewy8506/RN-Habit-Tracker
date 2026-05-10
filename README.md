@@ -1,50 +1,167 @@
-# Welcome to your Expo app 👋
+# FOCUS
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A minimalist deep-work productivity app designed to help you enter flow state and stay consistent.
 
-## Get started
+Built with React Native + Expo, FOCUS combines a clean OLED-inspired interface with powerful focus session tracking and habit-building features.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## Preview
 
-2. Start the app
+FOCUS is designed around:
+- deep work
+- distraction-free productivity
+- ambient UI aesthetics
+- low visual noise
+- intentional interaction
 
-   ```bash
-   npx expo start
-   ```
+The interface is heavily inspired by:
+- Nothing OS
+- luxury watch interfaces
+- modern minimalist productivity systems
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Features
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Focus Timer
+- Elegant circular focus timer
+- Smooth animated progress ring
+- Ambient glow effects
+- Pomodoro-inspired workflow
 
-## Get a fresh project
+### Session Management
+- Start / pause / reset sessions
+- Skip between focus and break modes
+- Configurable session durations
 
-When you're ready, run:
+### Productivity Tracking
+- Daily focus statistics
+- Focus streaks
+- Session duration tracking
+
+### Minimalist UI
+- OLED-friendly dark interface
+- Subtle gradients and typography
+- Low-distraction design system
+- Smooth animations
+
+---
+
+## Tech Stack
+
+### Frontend
+- React Native
+- Expo
+- TypeScript
+
+### Animation & Graphics
+- React Native Reanimated
+- React Native SVG
+- Expo Linear Gradient
+
+### State Management
+- Zustand
+
+---
+
+## Installation
+
+Clone the repository:
 
 ```bash
-npm run reset-project
+git clone https://github.com/yourusername/focus-app.git
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Move into the project:
 
-## Learn more
+```bash
+cd focus-app
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Install dependencies:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm install
+```
 
-## Join the community
+Install Expo packages:
 
-Join our community of developers creating universal apps.
+```bash
+npx expo install react-native-svg
+npx expo install react-native-reanimated
+npx expo install expo-linear-gradient
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Start the development server:
+
+```bash
+npx expo start
+```
+
+---
+
+## Project Structure
+
+```bash
+components/
+  Timer/
+    CircularProgressRing.tsx
+    TimerControls.tsx
+    TimerDisplay.tsx
+
+hooks/
+  useTimer.ts
+
+store/
+  useTimerStore.ts
+  useSettingsStore.ts
+
+services/
+  timerService.ts
+
+screens/
+  FocusScreen.tsx
+```
+
+---
+
+## Design Philosophy
+
+FOCUS is intentionally designed to feel:
+- calm
+- premium
+- restrained
+- immersive
+
+The UI avoids:
+- excessive color
+- unnecessary effects
+- clutter
+- visual fatigue
+
+Every spacing, animation, and typography choice is optimized to keep attention on the task itself.
+
+---
+
+## Future Plans
+
+- Ambient soundscapes
+- Task integration
+- Focus analytics
+- Calendar sync
+- Cross-device sync
+- AI-powered productivity insights
+- Widgets and lockscreen controls
+
+---
+
+## License
+
+MIT License
+
+---
+
+## Author
+
+Built with focus and intentionality.
