@@ -2,20 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 
-import { GlassNavbar } from '@/components/ui/glass-navbar';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { MonosNavbar } from '@/components/ui/monos-navbar';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-      }}
-      tabBar={(props) => <GlassNavbar {...props} />}>
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <MonosNavbar {...props} />}>
       <Tabs.Screen
         name="index"
         options={{
@@ -24,26 +17,26 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="tasks"
+        name="today"
         options={{
-          title: 'Tasks',
-          tabBarIcon: ({ color, size }) => <Ionicons size={size} name="checkbox" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="habits"
-        options={{
-          title: 'Habits',
-          tabBarIcon: ({ color, size }) => <Ionicons size={size} name="repeat" color={color} />,
+          title: 'Today',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons size={size} name="checkmark-circle" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color, size }) => <Ionicons size={size} name="settings" color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons size={size} name="settings-outline" color={color} />
+          ),
         }}
       />
+      {/* Legacy screens — hidden from nav */}
+      <Tabs.Screen name="tasks" options={{ href: null }} />
+      <Tabs.Screen name="habits" options={{ href: null }} />
     </Tabs>
   );
 }
