@@ -5,11 +5,11 @@ import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
 import { HabitList } from '@/components/Habit/HabitList';
 import { TaskList } from '@/components/Task/TaskList';
+import { useColors } from '@/hooks/use-colors';
 import { useHabits } from '@/hooks/useHabits';
 import { useTasks } from '@/hooks/useTasks';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
-import { COLORS } from '@/utils/constants';
 
 export default function HomeScreen() {
   const { tasks, loading: tasksLoading, toggleTask } = useTasks();
@@ -23,32 +23,34 @@ export default function HomeScreen() {
     router.push('/focus');
   };
 
+  const colors = useColors();
+
   return (
-    <ScrollView contentContainerStyle={styles.screen}>
+    <ScrollView contentContainerStyle={[styles.screen, { backgroundColor: colors.background }]}> 
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>{authLoading ? 'Connecting' : 'Ready'}</Text>
-        <Text style={styles.title}>Today</Text>
-        <Text style={styles.subtitle}>Choose a task, start a focus session, and keep the day moving.</Text>
+        <Text style={[styles.eyebrow, { color: colors.primary }]}>{authLoading ? 'Connecting...' : 'Ready for focus'}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Today</Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>Pick a task, start a focus session, and keep the day in flow.</Text>
       </View>
 
-      <Button disabled={authLoading} title="Start Focus" onPress={startFocus} />
+      <Button disabled={authLoading} title="Start focus" onPress={startFocus} />
 
       <Card style={styles.section}>
-        <Text style={styles.sectionTitle}>Today’s tasks</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Next up</Text>
         <TaskList
           tasks={todaysTasks}
           loading={tasksLoading}
-          emptyText="No active tasks. Add one in the Tasks tab."
+          emptyText="No active tasks yet. Add one in Tasks, then return to start a session."
           onToggle={toggleTask}
         />
       </Card>
 
       <Card style={styles.section}>
-        <Text style={styles.sectionTitle}>Habit checklist</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily habits</Text>
         <HabitList
           habits={habits.slice(0, 4)}
           loading={habitsLoading}
-          emptyText="No habits yet. Add one in the Habits tab."
+          emptyText="No habits yet. Add your first daily ritual in Habits."
           onComplete={completeHabit}
         />
       </Card>
@@ -58,7 +60,6 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: COLORS.background,
     gap: 18,
     padding: 20,
     paddingTop: 64,
@@ -67,18 +68,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   eyebrow: {
-    color: COLORS.primary,
     fontSize: 13,
     fontWeight: '800',
     textTransform: 'uppercase',
   },
   title: {
-    color: COLORS.text,
     fontSize: 36,
     fontWeight: '900',
   },
   subtitle: {
-    color: COLORS.muted,
     fontSize: 16,
     lineHeight: 23,
   },
@@ -86,7 +84,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionTitle: {
-    color: COLORS.text,
     fontSize: 18,
     fontWeight: '800',
   },

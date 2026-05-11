@@ -5,7 +5,7 @@ import { BlurView } from 'expo-blur';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { COLORS } from '@/utils/constants';
+import { useColors } from '@/hooks/use-colors';
 
 type RouteIconName = keyof typeof Ionicons.glyphMap;
 
@@ -18,10 +18,11 @@ const icons: Record<string, RouteIconName> = {
 
 export function GlassNavbar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const content = state.routes.map((route, index) => {
     const options = descriptors[route.key].options;
     const focused = state.index === index;
-    const color = focused ? COLORS.primary : COLORS.muted;
+    const color = focused ? colors.primary : colors.muted;
     const label =
       typeof options.tabBarLabel === 'string' ? options.tabBarLabel : options.title ?? route.name;
 
@@ -66,13 +67,13 @@ export function GlassNavbar({ state, descriptors, navigation }: BottomTabBarProp
   return (
     <View style={[styles.safeArea, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       {isLiquidGlassSupported ? (
-        <LiquidGlassView interactive effect="clear" style={styles.glass}>
+        <LiquidGlassView interactive effect="clear" style={[styles.glass, { backgroundColor: 'rgba(15, 23, 42, 0.75)' }]}>
           {content}
         </LiquidGlassView>
       ) : (
         <View style={styles.fallbackShadow}>
-          <BlurView intensity={42} tint="light" style={styles.fallbackGlass}>
-            <View pointerEvents="none" style={styles.tintLayer} />
+          <BlurView intensity={42} tint="dark" style={[styles.fallbackGlass, { borderColor: colors.border }]}> 
+            <View pointerEvents="none" style={[styles.tintLayer, { backgroundColor: 'rgba(15, 23, 42, 0.42)' }]} />
             <View pointerEvents="none" style={styles.highlightLayer} />
             <View style={styles.contentRow}>{content}</View>
           </BlurView>
@@ -108,7 +109,6 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   fallbackGlass: {
-    borderColor: 'rgba(255, 255, 255, 0.68)',
     borderRadius: 28,
     borderWidth: 1,
     minHeight: 70,
@@ -116,10 +116,10 @@ const styles = StyleSheet.create({
   },
   tintLayer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.36)',
+    backgroundColor: 'rgba(15, 23, 42, 0.42)',
   },
   highlightLayer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
     borderRadius: 999,
     height: 36,
     opacity: 0.42,
@@ -150,8 +150,8 @@ const styles = StyleSheet.create({
     width: 44,
   },
   activeBubble: {
-    backgroundColor: 'rgba(255, 255, 255, 0.54)',
-    borderColor: 'rgba(255, 255, 255, 0.66)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.34)',
     borderWidth: 1,
   },
   label: {

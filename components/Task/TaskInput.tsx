@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/common/Button';
-import { COLORS } from '@/utils/constants';
+import { useColors } from '@/hooks/use-colors';
 import { compactTitle } from '@/utils/helpers';
 
 type TaskInputProps = {
@@ -11,6 +11,7 @@ type TaskInputProps = {
 };
 
 export function TaskInput({ onSubmit, placeholder = 'Add a task' }: TaskInputProps) {
+  const colors = useColors();
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -30,11 +31,11 @@ export function TaskInput({ onSubmit, placeholder = 'Add a task' }: TaskInputPro
     <View style={styles.container}>
       <TextInput
         placeholder={placeholder}
-        placeholderTextColor={COLORS.muted}
+        placeholderTextColor={colors.muted}
         value={title}
         onChangeText={setTitle}
         onSubmitEditing={submit}
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
       />
       <Button disabled={saving || !compactTitle(title)} title="Add" onPress={submit} />
     </View>
@@ -47,11 +48,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderColor: COLORS.border,
     borderRadius: 8,
     borderWidth: 1,
-    color: COLORS.text,
     flex: 1,
     fontSize: 16,
     minHeight: 48,

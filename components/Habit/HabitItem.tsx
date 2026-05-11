@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useColors } from '@/hooks/use-colors';
 import { Habit } from '@/types/habit';
-import { COLORS } from '@/utils/constants';
 import { isSameLocalDay } from '@/utils/time';
 
 type HabitItemProps = {
@@ -11,27 +11,32 @@ type HabitItemProps = {
 };
 
 export function HabitItem({ habit, onComplete, onDelete }: HabitItemProps) {
+  const colors = useColors();
   const completedToday = habit.lastCompleted
     ? isSameLocalDay(habit.lastCompleted.toDate(), new Date())
     : false;
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: completedToday }}
         disabled={completedToday}
         onPress={() => onComplete(habit)}
-        style={[styles.check, completedToday && styles.checked]}>
+        style={[
+          styles.check,
+          { borderColor: colors.border },
+          completedToday && { backgroundColor: colors.success, borderColor: colors.success },
+        ]}>
         <Text style={styles.checkLabel}>{completedToday ? '✓' : ''}</Text>
       </Pressable>
       <View style={styles.content}>
-        <Text style={styles.name}>{habit.name}</Text>
-        <Text style={styles.meta}>{habit.streak} day streak</Text>
+        <Text style={[styles.name, { color: colors.text }]}>{habit.name}</Text>
+        <Text style={[styles.meta, { color: colors.muted }]}>{habit.streak} day streak</Text>
       </View>
       {onDelete ? (
         <Pressable onPress={() => onDelete(habit.id)} hitSlop={12}>
-          <Text style={styles.delete}>Delete</Text>
+          <Text style={[styles.delete, { color: colors.danger }]}>Delete</Text>
         </Pressable>
       ) : null}
     </View>
@@ -41,8 +46,6 @@ export function HabitItem({ habit, onComplete, onDelete }: HabitItemProps) {
 const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: COLORS.border,
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
@@ -51,16 +54,11 @@ const styles = StyleSheet.create({
   },
   check: {
     alignItems: 'center',
-    borderColor: COLORS.border,
     borderRadius: 13,
     borderWidth: 2,
     height: 28,
     justifyContent: 'center',
     width: 28,
-  },
-  checked: {
-    backgroundColor: COLORS.success,
-    borderColor: COLORS.success,
   },
   checkLabel: {
     color: '#FFFFFF',
@@ -71,16 +69,13 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   name: {
-    color: COLORS.text,
     fontSize: 16,
     fontWeight: '700',
   },
   meta: {
-    color: COLORS.muted,
     fontSize: 13,
   },
   delete: {
-    color: COLORS.danger,
     fontWeight: '700',
   },
 });

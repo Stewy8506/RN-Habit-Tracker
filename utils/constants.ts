@@ -15,16 +15,16 @@ const LIGHT_COLORS = {
 };
 
 const DARK_COLORS = {
-  background: '#0F172A',
-  surface: '#1E293B',
-  text: '#F1F5F9',
+  background: '#0A0F18',
+  surface: '#111827',
+  text: '#F8FAFC',
   muted: '#94A3B8',
   border: '#334155',
-  primary: '#3B82F6',
-  primaryPressed: '#2563EB',
+  primary: '#60A5FA',
+  primaryPressed: '#3B82F6',
   success: '#22C55E',
   danger: '#EF4444',
-  warning: '#F97316',
+  warning: '#F59E0B',
 };
 
 export const COLORS = LIGHT_COLORS;

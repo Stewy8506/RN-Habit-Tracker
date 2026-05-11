@@ -2,11 +2,11 @@ import { ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-nat
 
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
+import { useColors } from '@/hooks/use-colors';
 import { disableDnd, enableDnd, getDndStatus, requestDndPolicyAccess } from '@/services/dndService';
 import { updateUserTimerSettings } from '@/services/firestoreService';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
-import { COLORS } from '@/utils/constants';
 
 function clampMinutes(value: string) {
   const parsed = Number(value);
@@ -18,6 +18,7 @@ function clampMinutes(value: string) {
 }
 
 export default function SettingsScreen() {
+  const colors = useColors();
   const userId = useSettingsStore((state) => state.userId);
   const authLoading = useSettingsStore((state) => state.authLoading);
   const dndEnabled = useSettingsStore((state) => state.dndEnabled);
@@ -81,33 +82,33 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView 
-      contentContainerStyle={styles.screen}
+      contentContainerStyle={[styles.screen, { backgroundColor: colors.background }]}
       showsVerticalScrollIndicator={true}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>Settings</Text>
+      <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
       <Card style={styles.card}>
         <View style={styles.row}>
           <View style={styles.rowText}>
-            <Text style={styles.label}>Anonymous account</Text>
-            <Text style={styles.value}>{authLoading ? 'Signing in...' : userId ?? 'Unavailable'}</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Account status</Text>
+            <Text style={[styles.value, { color: colors.muted }]}>{authLoading ? 'Signing in...' : userId ?? 'Unavailable'}</Text>
           </View>
         </View>
         <View style={styles.row}>
           <View style={styles.rowText}>
-            <Text style={styles.label}>DND during focus</Text>
-            <Text style={styles.value}>
+            <Text style={[styles.label, { color: colors.text }]}>Focus DND</Text>
+            <Text style={[styles.value, { color: colors.muted }]}> 
               {dndStatus.nativeControlled
-                ? 'Phone DND is controlled during focus'
+                ? 'Phone DND is managed while you focus.'
                 : dndStatus.policyAccessGranted
-                  ? 'Ready to control phone DND in a dev build'
-                  : 'Grant DND access to control phone DND'}
+                  ? 'DND access is available for this build.'
+                  : 'Grant DND access to block distractions.'}
             </Text>
           </View>
           <Switch value={dndEnabled} onValueChange={toggleDnd} />
         </View>
         <Button
-          title="Open DND Access Settings"
+          title="Manage DND access"
           variant="secondary"
           onPress={() => void requestDndPolicyAccess()}
         />
@@ -128,7 +129,7 @@ export default function SettingsScreen() {
             maxLength={3}
             onChangeText={updateFocusMinutes}
             selectTextOnFocus
-            style={styles.numberInput}
+            style={[styles.numberInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
             value={String(Math.round(focusDurationSeconds / 60))}
             autoCorrect={false}
             autoCapitalize="none"
@@ -137,15 +138,15 @@ export default function SettingsScreen() {
         </View>
         <View style={styles.durationRow}>
           <View style={styles.rowText}>
-            <Text style={styles.label}>Short break minutes</Text>
-            <Text style={styles.value}>Recovery time after most pomodoros</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Short break minutes</Text>
+            <Text style={[styles.value, { color: colors.muted }]}>Recovery time after a focus session</Text>
           </View>
           <TextInput
             keyboardType="number-pad"
             maxLength={3}
             onChangeText={updateShortBreakMinutes}
             selectTextOnFocus
-            style={styles.numberInput}
+            style={[styles.numberInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
             value={String(Math.round(shortBreakDurationSeconds / 60))}
             autoCorrect={false}
             autoCapitalize="none"
@@ -154,15 +155,15 @@ export default function SettingsScreen() {
         </View>
         <View style={styles.durationRow}>
           <View style={styles.rowText}>
-            <Text style={styles.label}>Long break minutes</Text>
-            <Text style={styles.value}>Extended recovery after 4 pomodoros</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Long break minutes</Text>
+            <Text style={[styles.value, { color: colors.muted }]}>Longer rest after repeated focus rounds</Text>
           </View>
           <TextInput
             keyboardType="number-pad"
             maxLength={3}
             onChangeText={updateLongBreakMinutes}
             selectTextOnFocus
-            style={styles.numberInput}
+            style={[styles.numberInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
             value={String(Math.round(longBreakDurationSeconds / 60))}
             autoCorrect={false}
             autoCapitalize="none"
@@ -172,15 +173,15 @@ export default function SettingsScreen() {
 
         <View style={styles.durationRow}>
           <View style={styles.rowText}>
-            <Text style={styles.label}>Long break intervals</Text>
-            <Text style={styles.value}>Focus sessions before a long break (1-10)</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Long break intervals</Text>
+            <Text style={[styles.value, { color: colors.muted }]}>Sessions before an extended recharge</Text>
           </View>
           <TextInput
             keyboardType="number-pad"
             maxLength={2}
             onChangeText={updateLongBreakInterval}
             selectTextOnFocus
-            style={styles.numberInput}
+            style={[styles.numberInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
             value={String(longBreakInterval)}
             autoCorrect={false}
             autoCapitalize="none"
@@ -194,7 +195,6 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: COLORS.background,
     flexGrow: 1,
     gap: 18,
     padding: 20,
@@ -202,7 +202,6 @@ const styles = StyleSheet.create({
     paddingTop: 64,
   },
   title: {
-    color: COLORS.text,
     fontSize: 34,
     fontWeight: '900',
   },
@@ -229,26 +228,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   label: {
-    color: COLORS.text,
     fontSize: 16,
     fontWeight: '800',
   },
   sectionTitle: {
-    color: COLORS.text,
     fontSize: 18,
     fontWeight: '900',
   },
   value: {
-    color: COLORS.muted,
     fontSize: 14,
     lineHeight: 20,
   },
   numberInput: {
-    backgroundColor: '#FFFFFF',
-    borderColor: COLORS.border,
     borderRadius: 8,
     borderWidth: 1,
-    color: COLORS.text,
     fontSize: 18,
     fontWeight: '800',
     minHeight: 48,

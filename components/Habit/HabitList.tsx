@@ -1,8 +1,8 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { HabitItem } from '@/components/Habit/HabitItem';
+import { useColors } from '@/hooks/use-colors';
 import { Habit } from '@/types/habit';
-import { COLORS } from '@/utils/constants';
 
 type HabitListProps = {
   habits: Habit[];
@@ -19,12 +19,14 @@ export function HabitList({
   onComplete,
   onDelete,
 }: HabitListProps) {
+  const colors = useColors();
+
   if (loading) {
-    return <ActivityIndicator color={COLORS.primary} />;
+    return <ActivityIndicator color={colors.primary} />;
   }
 
   if (!habits.length) {
-    return <Text style={styles.empty}>{emptyText}</Text>;
+    return <Text style={[styles.empty, { color: colors.muted }]}>{emptyText}</Text>;
   }
 
   return (
@@ -41,7 +43,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   empty: {
-    color: COLORS.muted,
     fontSize: 15,
     lineHeight: 22,
   },

@@ -4,11 +4,12 @@ import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
 import { HabitList } from '@/components/Habit/HabitList';
+import { useColors } from '@/hooks/use-colors';
 import { useHabits } from '@/hooks/useHabits';
-import { COLORS } from '@/utils/constants';
 import { compactTitle } from '@/utils/helpers';
 
 export default function HabitsScreen() {
+  const colors = useColors();
   const { habits, loading, error, addHabit, completeHabit, deleteHabit } = useHabits();
   const [name, setName] = useState('');
 
@@ -23,22 +24,22 @@ export default function HabitsScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.screen}>
-      <Text style={styles.title}>Habits</Text>
+    <ScrollView contentContainerStyle={[styles.screen, { backgroundColor: colors.background }]}> 
+      <Text style={[styles.title, { color: colors.text }]}>Habits</Text>
       <View style={styles.inputRow}>
         <TextInput
-          placeholder="Add a habit"
-          placeholderTextColor={COLORS.muted}
+          placeholder="Build a habit"
+          placeholderTextColor={colors.muted}
           value={name}
           onChangeText={setName}
           onSubmitEditing={submit}
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
         />
         <Button disabled={!compactTitle(name)} title="Add" onPress={submit} />
       </View>
       <Card style={styles.card}>
-        <Text style={styles.sectionTitle}>Daily check-in</Text>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily rhythm</Text>
+        {error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
         <HabitList
           habits={habits}
           loading={loading}
@@ -53,13 +54,11 @@ export default function HabitsScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: COLORS.background,
     gap: 18,
     padding: 20,
     paddingTop: 64,
   },
   title: {
-    color: COLORS.text,
     fontSize: 34,
     fontWeight: '900',
   },
@@ -68,11 +67,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderColor: COLORS.border,
     borderRadius: 8,
     borderWidth: 1,
-    color: COLORS.text,
     flex: 1,
     fontSize: 16,
     minHeight: 48,
@@ -82,11 +78,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionTitle: {
-    color: COLORS.text,
     fontSize: 18,
     fontWeight: '800',
   },
   error: {
-    color: COLORS.danger,
+    fontWeight: '700',
   },
 });

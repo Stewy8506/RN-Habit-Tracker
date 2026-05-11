@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useColors } from '@/hooks/use-colors';
 import { Task } from '@/types/task';
-import { COLORS } from '@/utils/constants';
 import { pluralize } from '@/utils/helpers';
 
 type TaskItemProps = {
@@ -13,27 +13,39 @@ type TaskItemProps = {
 };
 
 export function TaskItem({ task, selected, onToggle, onDelete, onSelect }: TaskItemProps) {
+  const colors = useColors();
+
   return (
     <Pressable
       onPress={() => onSelect?.(task.id)}
-      style={[styles.row, selected && styles.selected]}
+      style={[
+        styles.row,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+        selected && { borderColor: colors.primary, borderWidth: 2 },
+      ]}
       accessibilityRole={onSelect ? 'button' : undefined}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: task.completed }}
         onPress={() => onToggle(task)}
-        style={[styles.checkbox, task.completed && styles.checked]}>
+        style={[
+          styles.checkbox,
+          { borderColor: colors.border },
+          task.completed && { backgroundColor: colors.success, borderColor: colors.success },
+        ]}>
         <Text style={styles.check}>{task.completed ? '✓' : ''}</Text>
       </Pressable>
       <View style={styles.content}>
-        <Text style={[styles.title, task.completed && styles.completed]}>{task.title}</Text>
-        <Text style={styles.meta}>
+        <Text style={[styles.title, task.completed && { color: colors.muted, textDecorationLine: 'line-through' }]}>
+          {task.title}
+        </Text>
+        <Text style={[styles.meta, { color: colors.muted }]}>
           {task.pomodoroCount} {pluralize(task.pomodoroCount, 'pomodoro')}
         </Text>
       </View>
       {onDelete ? (
         <Pressable onPress={() => onDelete(task.id)} hitSlop={12}>
-          <Text style={styles.delete}>Delete</Text>
+          <Text style={[styles.delete, { color: colors.danger }]}>Delete</Text>
         </Pressable>
       ) : null}
     </Pressable>
@@ -43,30 +55,19 @@ export function TaskItem({ task, selected, onToggle, onDelete, onSelect }: TaskI
 const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: COLORS.border,
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 12,
     padding: 14,
   },
-  selected: {
-    borderColor: COLORS.primary,
-    borderWidth: 2,
-  },
   checkbox: {
     alignItems: 'center',
-    borderColor: COLORS.border,
     borderRadius: 6,
     borderWidth: 2,
     height: 26,
     justifyContent: 'center',
     width: 26,
-  },
-  checked: {
-    backgroundColor: COLORS.success,
-    borderColor: COLORS.success,
   },
   check: {
     color: '#FFFFFF',
@@ -77,20 +78,13 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   title: {
-    color: COLORS.text,
     fontSize: 16,
     fontWeight: '700',
   },
-  completed: {
-    color: COLORS.muted,
-    textDecorationLine: 'line-through',
-  },
   meta: {
-    color: COLORS.muted,
     fontSize: 13,
   },
   delete: {
-    color: COLORS.danger,
     fontWeight: '700',
   },
 });

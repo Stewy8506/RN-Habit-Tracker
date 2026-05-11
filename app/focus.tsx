@@ -1,4 +1,12 @@
+import { CircularProgressRing } from '@/components/Timer/CircularProgressRing';
+import { WheelPicker } from '@/components/Timer/WheelPicker';
+import { useTimer } from '@/hooks/useTimer';
+import { getModeDuration } from '@/services/timerService';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { useTimerStore } from '@/store/useTimerStore';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Modal,
@@ -14,14 +22,6 @@ import Animated, {
   withSpring,
   withTiming
 } from 'react-native-reanimated';
-
-import { CircularProgressRing } from '@/components/Timer/CircularProgressRing';
-import { WheelPicker } from '@/components/Timer/WheelPicker';
-import { useTimer } from '@/hooks/useTimer';
-import { getModeDuration } from '@/services/timerService';
-import { useSettingsStore } from '@/store/useSettingsStore';
-import { useTimerStore } from '@/store/useTimerStore';
-import { useRouter } from 'expo-router';
 
 // ── Picker data ───────────────────────────────────────────────────────────────
 const MINUTES = Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0'));
@@ -152,8 +152,25 @@ export default function FocusScreen() {
 
   const [editVisible, setEditVisible] = useState(false);
 
+  const lightTap = () => {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+};
+
+const mediumTap = () => {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+};
+
+const softTap = () => {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
+};
+
+const successTap = () => {
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+};
+
   const openEditor = () => {
     if (!isIdle) return;
+    softTap();
     // Pre-populate from current store values
     const fi = secsToIndices(focusDurationSeconds);
     const sbi = secsToIndices(shortBreakDurationSeconds);

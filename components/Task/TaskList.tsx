@@ -1,8 +1,8 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { TaskItem } from '@/components/Task/TaskItem';
+import { useColors } from '@/hooks/use-colors';
 import { Task } from '@/types/task';
-import { COLORS } from '@/utils/constants';
 
 type TaskListProps = {
   tasks: Task[];
@@ -23,12 +23,14 @@ export function TaskList({
   onDelete,
   onSelect,
 }: TaskListProps) {
+  const colors = useColors();
+
   if (loading) {
-    return <ActivityIndicator color={COLORS.primary} />;
+    return <ActivityIndicator color={colors.primary} />;
   }
 
   if (!tasks.length) {
-    return <Text style={styles.empty}>{emptyText}</Text>;
+    return <Text style={[styles.empty, { color: colors.muted }]}>{emptyText}</Text>;
   }
 
   return (
@@ -52,7 +54,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   empty: {
-    color: COLORS.muted,
     fontSize: 15,
     lineHeight: 22,
   },
