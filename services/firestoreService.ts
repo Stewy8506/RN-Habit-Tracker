@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 
 import { db } from '@/config/firebase';
-import { Habit } from '@/types/habit';
+import { CreateHabitInput, Habit } from '@/types/habit';
 import { CreateSessionInput } from '@/types/session';
 import { CreateTaskInput, Task } from '@/types/task';
 import { compactTitle } from '@/utils/helpers';
@@ -116,6 +116,10 @@ export async function createTask(userId: string, input: CreateTaskInput) {
     createdAt: serverTimestamp(),
     pomodoroCount: 0,
     deadline: input.deadline ? Timestamp.fromDate(input.deadline) : null,
+    durationMinutes: input.durationMinutes ?? null,
+    icon: input.icon ?? null,
+    priority: input.priority ?? null,
+    timerType: input.timerType ?? null,
   });
 }
 
@@ -150,8 +154,8 @@ export function listenToHabits(
   );
 }
 
-export async function createHabit(userId: string, nameValue: string) {
-  const name = compactTitle(nameValue);
+export async function createHabit(userId: string, input: CreateHabitInput) {
+  const name = compactTitle(input.name);
   if (!name) {
     return;
   }
@@ -160,6 +164,11 @@ export async function createHabit(userId: string, nameValue: string) {
     name,
     streak: 0,
     lastCompleted: null,
+    icon: input.icon ?? null,
+    priority: input.priority ?? null,
+    category: input.category ?? null,
+    durationMinutes: input.durationMinutes ?? null,
+    timerType: input.timerType ?? null,
   });
 }
 

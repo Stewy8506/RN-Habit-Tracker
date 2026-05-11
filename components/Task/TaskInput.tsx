@@ -3,10 +3,11 @@ import { StyleSheet, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/common/Button';
 import { useColors } from '@/hooks/use-colors';
+import { CreateTaskInput } from '@/types/task';
 import { compactTitle } from '@/utils/helpers';
 
 type TaskInputProps = {
-  onSubmit: (title: string) => Promise<void> | void;
+  onSubmit: (input: CreateTaskInput) => Promise<void> | void;
   placeholder?: string;
 };
 
@@ -22,7 +23,7 @@ export function TaskInput({ onSubmit, placeholder = 'Add a task' }: TaskInputPro
     }
 
     setSaving(true);
-    await onSubmit(nextTitle);
+    await onSubmit({ title: nextTitle });
     setTitle('');
     setSaving(false);
   };

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,12 +12,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/common/Button';
+import { Modal } from '@/components/common/Modal';
 import { useHabits } from '@/hooks/useHabits';
 import { useTasks } from '@/hooks/useTasks';
-import { Habit } from '@/types/habit';
-import { Task } from '@/types/task';
-import { isSameLocalDay } from '@/utils/time';
+import { useTimer } from '@/hooks/useTimer';
+import { Habit, HabitPriority, HabitTimerType } from '@/types/habit';
+import { Task, TaskPriority, TaskTimerType } from '@/types/task';
 import { compactTitle } from '@/utils/helpers';
+import { isSameLocalDay } from '@/utils/time';
 
 const BG = '#0A0A0A';
 const CARD = '#141414';
@@ -29,8 +33,44 @@ const DOT_ON = '#4A8FD4';
 const DOT_OFF = '#272727';
 const BORDER = 'rgba(255,255,255,0.07)';
 
+const TASK_ICON_OPTIONS = [
+  'time-outline',
+  'book-outline',
+  'fitness-outline',
+  'brush-outline',
+  'musical-notes-outline',
+  'heart-outline',
+] as const;
+const HABIT_ICON_OPTIONS = [
+  'moon-outline',
+  'book-outline',
+  'barbell-outline',
+  'heart-outline',
+  'pencil-outline',
+  'medkit-outline',
+] as const;
+
+type TaskIcon = typeof TASK_ICON_OPTIONS[number];
+type HabitIcon = typeof HABIT_ICON_OPTIONS[number];
+
+const PRIORITY_OPTIONS = ['low', 'medium', 'high'] as const;
+const HABIT_PRESETS = [
+  { name: 'Meditation', icon: 'moon-outline' },
+  { name: 'Studying', icon: 'book-outline' },
+  { name: 'Workout', icon: 'barbell-outline' },
+  { name: 'Reading', icon: 'book-outline' },
+];
+
 // ── Habit row with 7-dot streak strip ────────────────────────────────
-function HabitRow({ habit, onComplete }: { habit: Habit; onComplete: (h: Habit) => void }) {
+function HabitRow({
+  habit,
+  onComplete,
+  onOpenTimer,
+}: {
+  habit: Habit;
+  onComplete: (h: Habit) => void;
+  onOpenTimer?: (h: Habit) => void;
+}) {
   const today = new Date();
   const doneToday = habit.lastCompleted
     ? isSameLocalDay(habit.lastCompleted.toDate(), today)
@@ -47,19 +87,36 @@ function HabitRow({ habit, onComplete }: { habit: Habit; onComplete: (h: Habit) 
     'walk-outline',
   ];
   const iconIndex = habit.name.length % icons.length;
+  const iconName = (habit.icon as keyof typeof Ionicons.glyphMap) ?? icons[iconIndex];
+  const timerLabel = habit.timerType ? habit.timerType.toUpperCase() : null;
 
   return (
-    <Pressable
-      onPress={() => !doneToday && onComplete(habit)}
-      style={[styles.habitRow, doneToday && styles.habitRowDone]}>
-      <View style={[styles.habitIcon, doneToday && styles.habitIconDone]}>
-        <Ionicons
-          name={doneToday ? 'checkmark' : icons[iconIndex]}
-          size={16}
-          color={doneToday ? TEXT : MUTED}
-        />
-      </View>
-      <Text style={[styles.habitName, doneToday && { color: MUTED }]}>{habit.name}</Text>
+    <View style={[styles.habitRow, doneToday && styles.habitRowDone]}>
+      <Pressable
+        onPress={() => !doneToday && onComplete(habit)}
+        style={[styles.habitRowContent, doneToday && styles.habitRowDone]}>
+        <View style={[styles.habitIcon, doneToday && styles.habitIconDone]}>
+          <Ionicons
+            name={doneToday ? 'checkmark' : iconName}
+            size={16}
+            color={doneToday ? TEXT : MUTED}
+          />
+        </View>
+        <View style={styles.habitTextWrap}>
+          <Text style={[styles.habitName, doneToday && { color: MUTED }]}>{habit.name}</Text>
+          {habit.durationMinutes || timerLabel ? (
+            <Text style={styles.habitMeta}>
+              {habit.durationMinutes ? `${habit.durationMinutes} min · ` : ''}
+              {timerLabel}
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
+      {habit.timerType ? (
+        <Pressable style={styles.timerButton} onPress={() => onOpenTimer?.(habit)}>
+          <Ionicons name="play" size={16} color={ACCENT} />
+        </Pressable>
+      ) : null}
       <View style={styles.dots}>
         {Array.from({ length: 7 }).map((_, i) => (
           <View
@@ -68,7 +125,7 @@ function HabitRow({ habit, onComplete }: { habit: Habit; onComplete: (h: Habit) 
           />
         ))}
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -76,11 +133,18 @@ function HabitRow({ habit, onComplete }: { habit: Habit; onComplete: (h: Habit) 
 function TaskRow({
   task,
   onToggle,
+  onOpenTimer,
 }: {
   task: Task;
   onToggle: (t: Task) => void;
+  onOpenTimer?: (t: Task) => void;
 }) {
-  const estMins = task.pomodoroCount > 0 ? task.pomodoroCount * 25 : null;
+  const duration = task.durationMinutes ?? (task.pomodoroCount > 0 ? task.pomodoroCount * 25 : null);
+  const deadlineText = task.deadline
+    ? task.deadline.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : null;
+  const iconName = (task.icon as keyof typeof Ionicons.glyphMap) ?? 'stopwatch-outline';
+  const timerLabel = task.timerType ? task.timerType.toUpperCase() : null;
 
   return (
     <View style={[styles.taskRow, task.completed && styles.taskRowDone]}>
@@ -89,19 +153,53 @@ function TaskRow({
           {task.completed && <Ionicons name="checkmark" size={12} color={TEXT} />}
         </View>
       </Pressable>
-      <View style={styles.taskContent}>
-        <Text
-          style={[styles.taskTitle, task.completed && { color: MUTED, textDecorationLine: 'line-through' }]}
-          numberOfLines={2}>
-          {task.title}
-        </Text>
-        {estMins && (
-          <View style={styles.taskMeta}>
-            <Ionicons name="time-outline" size={11} color={MUTED} />
-            <Text style={styles.taskMetaText}>{estMins} min</Text>
+      <Pressable
+        style={styles.taskContent}
+        onPress={() => task.timerType && onOpenTimer?.(task)}>
+        <View style={styles.taskHeader}>
+          <Text
+            style={[styles.taskTitle, task.completed && { color: MUTED, textDecorationLine: 'line-through' }]}
+            numberOfLines={2}>
+            {task.title}
+          </Text>
+          <View style={styles.taskIconBadge}>
+            <Ionicons name={iconName} size={14} color={TEXT} />
           </View>
-        )}
-      </View>
+        </View>
+        <View style={styles.taskMetaRow}>
+          {duration ? (
+            <View style={styles.taskMeta}>
+              <Ionicons name="time-outline" size={11} color={MUTED} />
+              <Text style={styles.taskMetaText}>{duration} min</Text>
+            </View>
+          ) : null}
+          {deadlineText ? (
+            <View style={styles.taskMeta}>
+              <Ionicons name="calendar-outline" size={11} color={MUTED} />
+              <Text style={styles.taskMetaText}>{deadlineText}</Text>
+            </View>
+          ) : null}
+          {timerLabel ? (
+            <View style={styles.taskMeta}>
+              <Ionicons name="play-outline" size={11} color={MUTED} />
+              <Text style={styles.taskMetaText}>{timerLabel}</Text>
+            </View>
+          ) : null}
+          {task.priority ? (
+            <View
+              style={[
+                styles.priorityPill,
+                task.priority === 'high'
+                  ? styles.priorityHigh
+                  : task.priority === 'medium'
+                  ? styles.priorityMedium
+                  : styles.priorityLow,
+              ]}>
+              <Text style={styles.priorityText}>{task.priority}</Text>
+            </View>
+          ) : null}
+        </View>
+      </Pressable>
     </View>
   );
 }
@@ -109,13 +207,53 @@ function TaskRow({
 // ── Main screen ───────────────────────────────────────────────────────
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { habits, loading: habLoading, completeHabit, addHabit } = useHabits();
   const { tasks, loading: taskLoading, addTask, toggleTask, deleteTask } = useTasks();
+  const {
+    isRunning,
+    mode,
+    secondsLeft,
+    selectedTaskId,
+    selectedTimerName,
+    selectedTimerType,
+    setSelectedTaskId,
+    setSelectedTimerType,
+    setSelectedTimerName,
+  } = useTimer();
 
   const [showAddTask, setShowAddTask] = useState(false);
   const [showAddHabit, setShowAddHabit] = useState(false);
-  const [taskInput, setTaskInput] = useState('');
-  const [habitInput, setHabitInput] = useState('');
+  const [taskForm, setTaskForm] = useState<{
+    title: string;
+    duration: string;
+    icon: TaskIcon;
+    deadline: string;
+    priority: TaskPriority;
+    timerType: TaskTimerType;
+  }>({
+    title: '',
+    duration: '25',
+    icon: TASK_ICON_OPTIONS[0] as TaskIcon,
+    deadline: '',
+    priority: 'medium' as TaskPriority,
+    timerType: 'pomodoro' as TaskTimerType,
+  });
+  const [habitForm, setHabitForm] = useState<{
+    name: string;
+    icon: HabitIcon;
+    priority: HabitPriority;
+    category: string;
+    duration: string;
+    timerType: HabitTimerType;
+  }>({
+    name: '',
+    icon: HABIT_ICON_OPTIONS[0] as HabitIcon,
+    priority: 'medium' as HabitPriority,
+    category: '',
+    duration: '25',
+    timerType: 'pomodoro' as HabitTimerType,
+  });
   const [upcomingOpen, setUpcomingOpen] = useState(false);
 
   const today = new Date();
@@ -124,19 +262,86 @@ export default function TodayScreen() {
     (t) => !t.completed && t.deadline && t.deadline.toDate() > today,
   );
 
+  const formatTimerLabel = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const openTimer = (id: string, name: string, timerType: TaskTimerType | HabitTimerType | null | undefined) => {
+    setSelectedTaskId(id);
+    setSelectedTimerName(name);
+    if (timerType) {
+      setSelectedTimerType(timerType);
+    }
+    router.push('/focus');
+  };
+
+  const resetTaskForm = () =>
+    setTaskForm({
+      title: '',
+      duration: '25',
+      icon: TASK_ICON_OPTIONS[0] as TaskIcon,
+      deadline: '',
+      priority: 'medium' as TaskPriority,
+      timerType: 'pomodoro' as TaskTimerType,
+    });
+
+  const resetHabitForm = () =>
+    setHabitForm({
+      name: '',
+      icon: HABIT_ICON_OPTIONS[0] as HabitIcon,
+      priority: 'medium' as HabitPriority,
+      category: '',
+      duration: '25',
+      timerType: 'pomodoro' as HabitTimerType,
+    });
+
+  const parseDeadline = (value: string) => {
+    if (!value.trim()) {
+      return null;
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
   const submitTask = async () => {
-    const v = compactTitle(taskInput);
-    if (!v) return;
-    await addTask(v);
-    setTaskInput('');
+    const title = compactTitle(taskForm.title);
+    if (!title) return;
+
+    const deadline = parseDeadline(taskForm.deadline);
+    if (taskForm.deadline && !deadline) {
+      return;
+    }
+
+    await addTask({
+      title,
+      icon: taskForm.icon,
+      durationMinutes: Number(taskForm.duration) > 0 ? Number(taskForm.duration) : null,
+      deadline,
+      priority: taskForm.priority,
+      timerType: taskForm.timerType,
+    });
+
+    resetTaskForm();
     setShowAddTask(false);
   };
 
   const submitHabit = async () => {
-    const v = compactTitle(habitInput);
-    if (!v) return;
-    await addHabit(v);
-    setHabitInput('');
+    const name = compactTitle(habitForm.name);
+    if (!name) return;
+
+    await addHabit({
+      name,
+      icon: habitForm.icon,
+      priority: habitForm.priority,
+      category: habitForm.category || null,
+      durationMinutes: Number(habitForm.duration) > 0 ? Number(habitForm.duration) : null,
+      timerType: habitForm.timerType,
+    });
+
+    resetHabitForm();
     setShowAddHabit(false);
   };
 
@@ -157,6 +362,18 @@ export default function TodayScreen() {
         </Pressable>
       </View>
 
+      {isRunning && selectedTimerName ? (
+        <Pressable style={styles.activeTimerCard} onPress={() => router.push('/focus')}>
+          <Text style={styles.activeTimerLabel}>Active timer</Text>
+          <View style={styles.activeTimerRow}>
+            <Text style={styles.activeTimerName}>{selectedTimerName}</Text>
+            <Text style={styles.activeTimerTime}>
+              {formatTimerLabel(secondsLeft)} · {selectedTimerType?.toUpperCase()}
+            </Text>
+          </View>
+        </Pressable>
+      ) : null}
+
       {/* ── CONSISTENCY ─────────────────────────── */}
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>CONSISTENCY</Text>
@@ -168,31 +385,110 @@ export default function TodayScreen() {
       ) : habits.length === 0 ? (
         <Text style={styles.emptyText}>No habits yet.</Text>
       ) : (
-        habits.map((h) => <HabitRow key={h.id} habit={h} onComplete={completeHabit} />)
+        habits.map((h) => (
+          <HabitRow
+            key={h.id}
+            habit={h}
+            onComplete={completeHabit}
+            onOpenTimer={(habit) => openTimer(habit.id, habit.name, habit.timerType)}
+          />
+        ))
       )}
 
-      {/* Add habit */}
-      {showAddHabit ? (
-        <View style={styles.inlineInput}>
-          <TextInput
-            autoFocus
-            placeholder="New habit..."
-            placeholderTextColor={MUTED}
-            value={habitInput}
-            onChangeText={setHabitInput}
-            onSubmitEditing={submitHabit}
-            style={styles.textInput}
-          />
-          <Pressable onPress={submitHabit} style={styles.inlineSubmit}>
-            <Ionicons name="arrow-up-circle" size={24} color={ACCENT} />
-          </Pressable>
+      <Pressable style={styles.addRow} onPress={() => setShowAddHabit(true)}>
+        <Ionicons name="add" size={16} color={MUTED} />
+        <Text style={styles.addLabel}>ADD HABIT</Text>
+      </Pressable>
+
+      <Modal visible={showAddHabit} onClose={() => setShowAddHabit(false)}>
+        <Text style={styles.modalHeading}>New habit</Text>
+        <TextInput
+          placeholder="Habit name"
+          placeholderTextColor={MUTED}
+          value={habitForm.name}
+          onChangeText={(value) => setHabitForm((prev) => ({ ...prev, name: value }))}
+          style={[styles.modalInput, { color: TEXT }]}
+          autoFocus
+          returnKeyType="done"
+          onSubmitEditing={submitHabit}
+        />
+        <Text style={styles.modalLabel}>Suggested habits</Text>
+        <View style={styles.suggestionRow}>
+          {HABIT_PRESETS.map((preset) => (
+            <Pressable
+              key={preset.name}
+              style={[
+                styles.presetButton,
+                habitForm.name === preset.name && styles.presetButtonActive,
+              ]}
+              onPress={() =>
+                setHabitForm((prev) => ({
+                  ...prev,
+                  name: preset.name,
+                  icon: preset.icon as HabitIcon,
+                  category: preset.name,
+                }))
+              }>
+              <Text
+                style={[
+                  styles.presetText,
+                  habitForm.name === preset.name && styles.presetTextActive,
+                ]}>
+                {preset.name}
+              </Text>
+            </Pressable>
+          ))}
         </View>
-      ) : (
-        <Pressable style={styles.addRow} onPress={() => setShowAddHabit(true)}>
-          <Ionicons name="add" size={16} color={MUTED} />
-          <Text style={styles.addLabel}>ADD HABIT</Text>
-        </Pressable>
-      )}
+        <Text style={styles.modalLabel}>Icon</Text>
+        <View style={styles.iconRow}>
+          {HABIT_ICON_OPTIONS.map((icon) => (
+            <Pressable
+              key={icon}
+              style={[
+                styles.iconOption,
+                habitForm.icon === icon && styles.iconOptionSelected,
+              ]}
+              onPress={() => setHabitForm((prev) => ({ ...prev, icon }))}>
+              <Ionicons name={icon} size={20} color={habitForm.icon === icon ? TEXT : MUTED} />
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.modalLabel}>Priority</Text>
+        <View style={styles.priorityRow}>
+          {PRIORITY_OPTIONS.map((option) => (
+            <Pressable
+              key={option}
+              style={[
+                styles.priorityButton,
+                habitForm.priority === option && styles.priorityButtonSelected,
+              ]}
+              onPress={() => setHabitForm((prev) => ({ ...prev, priority: option }))}>
+              <Text
+                style={[
+                  styles.priorityButtonText,
+                  habitForm.priority === option && styles.priorityButtonTextSelected,
+                ]}>
+                {option}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.modalActions}>
+          <Button
+            title="Cancel"
+            variant="secondary"
+            onPress={() => {
+              resetHabitForm();
+              setShowAddHabit(false);
+            }}
+          />
+          <Button
+            title="Add habit"
+            onPress={submitHabit}
+            disabled={!compactTitle(habitForm.name)}
+          />
+        </View>
+      </Modal>
 
       <View style={{ height: 18 }} />
 
@@ -209,31 +505,100 @@ export default function TodayScreen() {
       ) : priorityTasks.length === 0 ? (
         <Text style={styles.emptyText}>All tasks done. 🎉</Text>
       ) : (
-        priorityTasks.map((t) => <TaskRow key={t.id} task={t} onToggle={toggleTask} />)
+        priorityTasks.map((t) => (
+          <TaskRow
+            key={t.id}
+            task={t}
+            onToggle={toggleTask}
+            onOpenTimer={(task) => openTimer(task.id, task.title, task.timerType)}
+          />
+        ))
       )}
 
-      {/* Add task */}
-      {showAddTask ? (
-        <View style={styles.inlineInput}>
-          <TextInput
-            autoFocus
-            placeholder="New task..."
-            placeholderTextColor={MUTED}
-            value={taskInput}
-            onChangeText={setTaskInput}
-            onSubmitEditing={submitTask}
-            style={styles.textInput}
-          />
-          <Pressable onPress={submitTask} style={styles.inlineSubmit}>
-            <Ionicons name="arrow-up-circle" size={24} color={ACCENT} />
-          </Pressable>
+      <Pressable style={styles.addRow} onPress={() => setShowAddTask(true)}>
+        <Ionicons name="add" size={16} color={MUTED} />
+        <Text style={styles.addLabel}>ADD TASK</Text>
+      </Pressable>
+
+      <Modal visible={showAddTask} onClose={() => setShowAddTask(false)}>
+        <Text style={styles.modalHeading}>New task</Text>
+        <TextInput
+          placeholder="Task name"
+          placeholderTextColor={MUTED}
+          value={taskForm.title}
+          onChangeText={(value) => setTaskForm((prev) => ({ ...prev, title: value }))}
+          style={[styles.modalInput, { color: TEXT }]}
+          autoFocus
+          returnKeyType="done"
+          onSubmitEditing={submitTask}
+        />
+        <Text style={styles.modalLabel}>Duration (minutes)</Text>
+        <TextInput
+          placeholder="25"
+          placeholderTextColor={MUTED}
+          value={taskForm.duration}
+          onChangeText={(value) => setTaskForm((prev) => ({ ...prev, duration: value }))}
+          keyboardType="number-pad"
+          style={[styles.modalInput, { color: TEXT }]}
+        />
+        <Text style={styles.modalLabel}>Icon</Text>
+        <View style={styles.iconRow}>
+          {TASK_ICON_OPTIONS.map((icon) => (
+            <Pressable
+              key={icon}
+              style={[
+                styles.iconOption,
+                taskForm.icon === icon && styles.iconOptionSelected,
+              ]}
+              onPress={() => setTaskForm((prev) => ({ ...prev, icon }))}>
+              <Ionicons name={icon} size={20} color={taskForm.icon === icon ? TEXT : MUTED} />
+            </Pressable>
+          ))}
         </View>
-      ) : (
-        <Pressable style={styles.addRow} onPress={() => setShowAddTask(true)}>
-          <Ionicons name="add" size={16} color={MUTED} />
-          <Text style={styles.addLabel}>ADD TASK</Text>
-        </Pressable>
-      )}
+        <Text style={styles.modalLabel}>Deadline</Text>
+        <TextInput
+          placeholder="YYYY-MM-DD"
+          placeholderTextColor={MUTED}
+          value={taskForm.deadline}
+          onChangeText={(value) => setTaskForm((prev) => ({ ...prev, deadline: value }))}
+          style={[styles.modalInput, { color: TEXT }]}
+        />
+        <Text style={styles.modalLabel}>Priority</Text>
+        <View style={styles.priorityRow}>
+          {PRIORITY_OPTIONS.map((option) => (
+            <Pressable
+              key={option}
+              style={[
+                styles.priorityButton,
+                taskForm.priority === option && styles.priorityButtonSelected,
+              ]}
+              onPress={() => setTaskForm((prev) => ({ ...prev, priority: option }))}>
+              <Text
+                style={[
+                  styles.priorityButtonText,
+                  taskForm.priority === option && styles.priorityButtonTextSelected,
+                ]}>
+                {option}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.modalActions}>
+          <Button
+            title="Cancel"
+            variant="secondary"
+            onPress={() => {
+              resetTaskForm();
+              setShowAddTask(false);
+            }}
+          />
+          <Button
+            title="Add task"
+            onPress={submitTask}
+            disabled={!compactTitle(taskForm.title)}
+          />
+        </View>
+      </Modal>
 
       <View style={{ height: 18 }} />
 
@@ -325,9 +690,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   habitIconDone: { backgroundColor: ACCENT },
+  habitRowContent: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  habitTextWrap: { flex: 1 },
   habitName: { color: TEXT, fontSize: 15, fontWeight: '500', flex: 1 },
+  habitMeta: { color: MUTED, fontSize: 12, marginTop: 2 },
+  timerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: CARD2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dots: { flexDirection: 'row', gap: 4 },
   dot: { width: 7, height: 7, borderRadius: 4 },
+
+  activeTimerCard: {
+    marginBottom: 18,
+    borderRadius: 18,
+    backgroundColor: CARD2,
+    padding: 18,
+    gap: 10,
+  },
+  activeTimerLabel: {
+    color: LABEL,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  activeTimerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  activeTimerName: { color: TEXT, fontSize: 18, fontWeight: '700' },
+  activeTimerTime: { color: MUTED, fontSize: 13 },
 
   // Task row
   taskRow: {
@@ -353,6 +752,99 @@ const styles = StyleSheet.create({
   taskTitle: { color: TEXT, fontSize: 20, fontWeight: '700', lineHeight: 26 },
   taskMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   taskMetaText: { color: MUTED, fontSize: 11 },
+  taskHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  taskMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6, alignItems: 'center' },
+  taskIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: CARD2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  priorityPill: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  priorityText: { color: TEXT, fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
+  priorityHigh: { backgroundColor: 'rgba(248, 81, 73, 0.16)' },
+  priorityMedium: { backgroundColor: 'rgba(255, 201, 71, 0.16)' },
+  priorityLow: { backgroundColor: 'rgba(76, 161, 175, 0.16)' },
+
+  modalHeading: {
+    color: TEXT,
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 18,
+  },
+  modalLabel: {
+    color: MUTED,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  modalInput: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: CARD,
+    fontSize: 15,
+  },
+  suggestionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  presetButton: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  presetButtonActive: { backgroundColor: ACCENT, borderColor: ACCENT },
+  presetText: { color: TEXT, fontSize: 13 },
+  presetTextActive: { color: '#FFFFFF' },
+  iconRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  iconOption: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconOptionSelected: { backgroundColor: ACCENT, borderColor: ACCENT },
+  priorityRow: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  priorityButton: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  priorityButtonSelected: { backgroundColor: ACCENT, borderColor: ACCENT },
+  priorityButtonText: { color: TEXT, fontSize: 13, textTransform: 'capitalize' },
+  priorityButtonTextSelected: { color: '#FFFFFF' },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 18,
+  },
 
   // Inline add input
   inlineInput: {

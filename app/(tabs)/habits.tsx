@@ -19,7 +19,7 @@ export default function HabitsScreen() {
       return;
     }
 
-    await addHabit(nextName);
+    await addHabit({ name: nextName });
     setName('');
   };
 

@@ -16,7 +16,11 @@ service cloud.firestore {
           'completed',
           'createdAt',
           'pomodoroCount',
-          'deadline'
+          'deadline',
+          'durationMinutes',
+          'icon',
+          'priority',
+          'timerType'
         ])
         && data.title is string
         && data.title.size() > 0
@@ -25,21 +29,35 @@ service cloud.firestore {
         && data.createdAt is timestamp
         && data.pomodoroCount is int
         && data.pomodoroCount >= 0
-        && (data.deadline == null || data.deadline is timestamp);
+        && (data.deadline == null || data.deadline is timestamp)
+        && (data.durationMinutes == null || (data.durationMinutes is int && data.durationMinutes > 0))
+        && (data.icon == null || data.icon is string)
+        && (data.priority == null || data.priority in ['low', 'medium', 'high'])
+        && (data.timerType == null || data.timerType in ['pomodoro', 'regular']);
     }
 
     function validHabit(data) {
       return data.keys().hasOnly([
           'name',
           'streak',
-          'lastCompleted'
+          'lastCompleted',
+          'icon',
+          'priority',
+          'category',
+          'durationMinutes',
+          'timerType'
         ])
         && data.name is string
         && data.name.size() > 0
         && data.name.size() <= 120
         && data.streak is int
         && data.streak >= 0
-        && (data.lastCompleted == null || data.lastCompleted is timestamp);
+        && (data.lastCompleted == null || data.lastCompleted is timestamp)
+        && (data.icon == null || data.icon is string)
+        && (data.priority == null || data.priority in ['low', 'medium', 'high'])
+        && (data.category == null || data.category is string)
+        && (data.durationMinutes == null || (data.durationMinutes is int && data.durationMinutes > 0))
+        && (data.timerType == null || data.timerType in ['pomodoro', 'regular']);
     }
 
     function validSession(data) {

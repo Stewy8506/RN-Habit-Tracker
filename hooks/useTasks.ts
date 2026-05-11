@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { createTask, deleteTask, listenToTasks, toggleTask } from '@/services/firestoreService';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTaskStore } from '@/store/useTaskStore';
-import { Task } from '@/types/task';
+import { CreateTaskInput, Task } from '@/types/task';
 
 export function useTasks() {
   const userId = useSettingsStore((state) => state.userId);
@@ -27,7 +27,7 @@ export function useTasks() {
     tasks,
     loading,
     error,
-    addTask: (title: string) => (userId ? createTask(userId, { title }) : Promise.resolve()),
+    addTask: (input: CreateTaskInput) => (userId ? createTask(userId, input) : Promise.resolve()),
     toggleTask: (task: Task) => (userId ? toggleTask(userId, task) : Promise.resolve()),
     deleteTask: (taskId: string) => (userId ? deleteTask(userId, taskId) : Promise.resolve()),
   };

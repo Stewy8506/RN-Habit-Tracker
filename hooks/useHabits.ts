@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { completeHabit, createHabit, deleteHabit, listenToHabits } from '@/services/firestoreService';
 import { useHabitStore } from '@/store/useHabitStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
-import { Habit } from '@/types/habit';
+import { CreateHabitInput, Habit } from '@/types/habit';
 
 export function useHabits() {
   const userId = useSettingsStore((state) => state.userId);
@@ -27,7 +27,7 @@ export function useHabits() {
     habits,
     loading,
     error,
-    addHabit: (name: string) => (userId ? createHabit(userId, name) : Promise.resolve()),
+    addHabit: (input: CreateHabitInput) => (userId ? createHabit(userId, input) : Promise.resolve()),
     completeHabit: (habit: Habit) => (userId ? completeHabit(userId, habit) : Promise.resolve()),
     deleteHabit: (habitId: string) => (userId ? deleteHabit(userId, habitId) : Promise.resolve()),
   };

@@ -16,10 +16,14 @@ export function useTimer() {
   const completedPomodoros = useTimerStore((state) => state.completedPomodoros);
   const isRunning = useTimerStore((state) => state.isRunning);
   const selectedTaskId = useTimerStore((state) => state.selectedTaskId);
+  const selectedTimerType = useTimerStore((state) => state.selectedTimerType);
+  const selectedTimerName = useTimerStore((state) => state.selectedTimerName);
   const setMode = useTimerStore((state) => state.setMode);
   const setSecondsLeft = useTimerStore((state) => state.setSecondsLeft);
   const setIsRunning = useTimerStore((state) => state.setIsRunning);
   const setSelectedTaskId = useTimerStore((state) => state.setSelectedTaskId);
+  const setSelectedTimerType = useTimerStore((state) => state.setSelectedTimerType);
+  const setSelectedTimerName = useTimerStore((state) => state.setSelectedTimerName);
   const incrementCompletedPomodoros = useTimerStore((state) => state.incrementCompletedPomodoros);
   const resetStore = useTimerStore((state) => state.reset);
 
@@ -29,7 +33,20 @@ export function useTimer() {
     let nextDuration: number;
 
     if (completedMode === 'focus') {
-      // After focus, determine break type based on long break interval
+      // After focus, save deep-work session first.
+      await disableDnd();
+      if (userId) {
+        await saveCompletedFocusSession(userId, selectedTaskId, focusDurationSeconds);
+      }
+
+      if (selectedTimerType === 'regular') {
+        // Regular mode ends after one deep focus block and does not auto-enter a break.
+        setIsRunning(false);
+        setMode('focus', focusDurationSeconds);
+        return;
+      }
+
+      // After focus, determine break type based on long break interval for pomodoro.
       const nextPomodoroCount = completedPomodoros + 1;
       nextMode = nextPomodoroCount % longBreakInterval === 0 ? 'longBreak' : 'shortBreak';
       nextDuration = nextMode === 'longBreak' ? longBreakDurationSeconds : shortBreakDurationSeconds;
@@ -42,23 +59,16 @@ export function useTimer() {
 
     setIsRunning(false);
 
-    if (completedMode === 'focus') {
-      await disableDnd();
-      if (userId) {
-        await saveCompletedFocusSession(userId, selectedTaskId, focusDurationSeconds);
-      }
-    }
-
     // Set the next mode and start automatically
     setMode(nextMode, nextDuration);
     
-    // Auto-start the next timer
+    // Auto-start the next timer after a quick transition delay
     setTimeout(() => {
       if (nextMode === 'focus') {
         void enableDnd();
       }
       setIsRunning(true);
-    }, 1000); // Small delay for UI feedback
+    }, 1000);
   }, [
     completedPomodoros,
     focusDurationSeconds,
@@ -111,16 +121,22 @@ export function useTimer() {
 
   const skip = async () => {
     const currentMode = useTimerStore.getState().mode;
+    const currentTimerType = useTimerStore.getState().selectedTimerType;
     let nextMode: FocusMode;
     let nextDuration: number;
     const running = useTimerStore.getState().isRunning;
 
     if (currentMode === 'focus') {
-      // After focus, determine break type based on long break interval
-      const nextPomodoroCount = useTimerStore.getState().completedPomodoros + 1;
-      nextMode = nextPomodoroCount % longBreakInterval === 0 ? 'longBreak' : 'shortBreak';
-      nextDuration = nextMode === 'longBreak' ? longBreakDurationSeconds : shortBreakDurationSeconds;
-      useTimerStore.getState().incrementCompletedPomodoros();
+      if (currentTimerType === 'regular') {
+        nextMode = 'focus';
+        nextDuration = focusDurationSeconds;
+      } else {
+        // After focus, determine break type based on long break interval
+        const nextPomodoroCount = useTimerStore.getState().completedPomodoros + 1;
+        nextMode = nextPomodoroCount % longBreakInterval === 0 ? 'longBreak' : 'shortBreak';
+        nextDuration = nextMode === 'longBreak' ? longBreakDurationSeconds : shortBreakDurationSeconds;
+        useTimerStore.getState().incrementCompletedPomodoros();
+      }
     } else {
       // After any break, go back to focus
       nextMode = 'focus';
@@ -149,7 +165,11 @@ export function useTimer() {
     completedPomodoros,
     isRunning,
     selectedTaskId,
+    selectedTimerType,
+    selectedTimerName,
     setSelectedTaskId,
+    setSelectedTimerType,
+    setSelectedTimerName,
     start,
     pause,
     reset,
