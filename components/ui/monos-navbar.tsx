@@ -31,7 +31,7 @@ export function MonosNavbar({ state, descriptors, navigation }: BottomTabBarProp
     const iconColor = focused ? '#FFFFFF' : 'rgba(255,255,255,0.38)';
 
     const onPress = () => {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
       const event = navigation.emit({
         type: 'tabPress',
         target: route.key,

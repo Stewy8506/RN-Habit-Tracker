@@ -64,11 +64,18 @@ export default function FocusScreen() {
     pause,
     reset,
     skip,
-  } = useTimer();
+  } = useTimer(() => router.push('/(tabs)/tasks'));
 
   const setFocusDurationSeconds = useTimerStore((s) => s.setFocusDurationSeconds);
   const setShortBreakDurationSeconds = useTimerStore((s) => s.setShortBreakDurationSeconds);
   const setLongBreakDurationSeconds = useTimerStore((s) => s.setLongBreakDurationSeconds);
+  const selectedTaskId = useTimerStore((s) => s.selectedTaskId);
+
+  useEffect(() => {
+    if (selectedTaskId && !isRunning && mode === 'focus') {
+      start();
+    }
+  }, [selectedTaskId, isRunning, mode, start]);
 
   const progress =
     secondsLeft / getModeDuration(mode, focusDurationSeconds, shortBreakDurationSeconds, longBreakDurationSeconds);

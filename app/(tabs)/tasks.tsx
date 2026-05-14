@@ -5,10 +5,33 @@ import { TaskInput } from '@/components/Task/TaskInput';
 import { TaskList } from '@/components/Task/TaskList';
 import { useColors } from '@/hooks/use-colors';
 import { useTasks } from '@/hooks/useTasks';
+import { useTimerStore } from '@/store/useTimerStore';
+import { useRouter } from 'expo-router';
 
 export default function TasksScreen() {
   const colors = useColors();
   const { tasks, loading, error, addTask, toggleTask, deleteTask } = useTasks();
+  const router = useRouter();
+  const setSelectedTaskId = useTimerStore((state) => state.setSelectedTaskId);
+  const setSelectedTimerType = useTimerStore((state) => state.setSelectedTimerType);
+  const setSelectedTimerName = useTimerStore((state) => state.setSelectedTimerName);
+  const setMode = useTimerStore((state) => state.setMode);
+  const focusDurationSeconds = useTimerStore((state) => state.focusDurationSeconds);
+
+  const handleTaskSelect = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const allottedSeconds = task.durationMinutes ? task.durationMinutes * 60 : focusDurationSeconds;
+    const timerDuration = Math.min(allottedSeconds, focusDurationSeconds);
+
+    setSelectedTaskId(taskId);
+    setSelectedTimerType('regular');
+    setSelectedTimerName(task.title);
+    setMode('focus', timerDuration);
+
+    router.push('/focus');
+  };
 
   return (
     <ScrollView contentContainerStyle={[styles.screen, { backgroundColor: colors.background }]}> 
@@ -23,6 +46,7 @@ export default function TasksScreen() {
           emptyText="Add a task to fuel your next focus session."
           onToggle={toggleTask}
           onDelete={deleteTask}
+          onSelect={handleTaskSelect}
         />
       </Card>
     </ScrollView>

@@ -12,6 +12,7 @@ export type Task = {
   pomodoroCount: number;
   deadline: Timestamp | null;
   durationMinutes?: number | null;
+  timeSpentSeconds?: number | null;
   icon?: string | null;
   priority?: TaskPriority | null;
   timerType?: TaskTimerType | null;
@@ -21,6 +22,7 @@ export type CreateTaskInput = {
   title: string;
   deadline?: Date | null;
   durationMinutes?: number | null;
+  timeSpentSeconds?: number | null;
   icon?: string | null;
   priority?: TaskPriority | null;
   timerType?: TaskTimerType | null;

@@ -1,13 +1,16 @@
 import { useCallback, useEffect } from 'react';
 
 import { disableDnd, enableDnd } from '@/services/dndService';
+import { completeTask, updateTaskTimeSpent } from '@/services/firestoreService';
 import { saveCompletedFocusSession } from '@/services/timerService';
 import { useSettingsStore } from '@/store/useSettingsStore';
+import { useTaskStore } from '@/store/useTaskStore';
 import { useTimerStore } from '@/store/useTimerStore';
 import { FocusMode } from '@/types/session';
-export function useTimer() {
+export function useTimer(onTaskCompleted?: () => void) {
   const userId = useSettingsStore((state) => state.userId);
   const longBreakInterval = useSettingsStore((state) => state.longBreakInterval);
+  const tasks = useTaskStore((state) => state.tasks);
   const mode = useTimerStore((state) => state.mode);
   const secondsLeft = useTimerStore((state) => state.secondsLeft);
   const focusDurationSeconds = useTimerStore((state) => state.focusDurationSeconds);
@@ -37,6 +40,43 @@ export function useTimer() {
       await disableDnd();
       if (userId) {
         await saveCompletedFocusSession(userId, selectedTaskId, focusDurationSeconds);
+      }
+
+      // Handle task completion
+      if (selectedTaskId) {
+        const task = tasks.find(t => t.id === selectedTaskId);
+        if (task && task.durationMinutes) {
+          const durationSeconds = task.durationMinutes * 60;
+          const timeSpent = (task.timeSpentSeconds || 0) + focusDurationSeconds;
+          if (userId) {
+            await updateTaskTimeSpent(userId, selectedTaskId, timeSpent);
+          }
+          if (timeSpent >= durationSeconds) {
+            // Task completed
+            if (userId) {
+              await completeTask(userId, selectedTaskId);
+            }
+            setSelectedTaskId(null);
+            setSelectedTimerType(null);
+            setSelectedTimerName(null);
+            setIsRunning(false);
+            setMode('focus', focusDurationSeconds);
+            onTaskCompleted?.();
+            return;
+          } else {
+            // Start another session for remaining time
+            const remaining = durationSeconds - timeSpent;
+            nextDuration = Math.min(remaining, focusDurationSeconds);
+            nextMode = 'focus';
+            setIsRunning(false);
+            setMode(nextMode, nextDuration);
+            setTimeout(() => {
+              void enableDnd();
+              setIsRunning(true);
+            }, 1000);
+            return;
+          }
+        }
       }
 
       if (selectedTimerType === 'regular') {
@@ -81,6 +121,8 @@ export function useTimer() {
     shortBreakDurationSeconds,
     userId,
     incrementCompletedPomodoros,
+    tasks,
+    onTaskCompleted,
   ]);
 
   useEffect(() => {

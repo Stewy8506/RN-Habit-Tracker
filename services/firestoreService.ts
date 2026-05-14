@@ -1,17 +1,17 @@
 import {
-    Timestamp,
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    increment,
-    onSnapshot,
-    orderBy,
-    query,
-    runTransaction,
-    serverTimestamp,
-    setDoc,
-    updateDoc,
+  Timestamp,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  increment,
+  onSnapshot,
+  orderBy,
+  query,
+  runTransaction,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
 } from 'firebase/firestore';
 
 import { db } from '@/config/firebase';
@@ -117,6 +117,7 @@ export async function createTask(userId: string, input: CreateTaskInput) {
     pomodoroCount: 0,
     deadline: input.deadline ? Timestamp.fromDate(input.deadline) : null,
     durationMinutes: input.durationMinutes ?? null,
+    timeSpentSeconds: input.timeSpentSeconds ?? 0,
     icon: input.icon ?? null,
     priority: input.priority ?? null,
     timerType: input.timerType ?? null,
@@ -136,6 +137,18 @@ export async function deleteTask(userId: string, taskId: string) {
 export async function incrementTaskPomodoro(userId: string, taskId: string) {
   await updateDoc(doc(tasksCollection(userId), taskId), {
     pomodoroCount: increment(1),
+  });
+}
+
+export async function updateTaskTimeSpent(userId: string, taskId: string, timeSpentSeconds: number) {
+  await updateDoc(doc(tasksCollection(userId), taskId), {
+    timeSpentSeconds,
+  });
+}
+
+export async function completeTask(userId: string, taskId: string) {
+  await updateDoc(doc(tasksCollection(userId), taskId), {
+    completed: true,
   });
 }
 
