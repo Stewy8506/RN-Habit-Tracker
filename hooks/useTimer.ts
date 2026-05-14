@@ -131,6 +131,9 @@ export function useTimer(onTaskCompleted?: () => void) {
     }
 
     const intervalId = setInterval(() => {
+      if (!useTimerStore.getState().isRunning) {
+        return;
+      }
       const currentSeconds = useTimerStore.getState().secondsLeft;
       if (currentSeconds <= 1) {
         clearInterval(intervalId);
@@ -157,6 +160,7 @@ export function useTimer(onTaskCompleted?: () => void) {
   };
 
   const reset = async () => {
+    setIsRunning(false);
     resetStore();
     await disableDnd();
   };
@@ -198,6 +202,10 @@ export function useTimer(onTaskCompleted?: () => void) {
     useTimerStore.getState().setMode(nextMode, nextDuration);
   };
 
+  const stop = () => {
+    setIsRunning(false);
+  };
+
   return {
     mode,
     secondsLeft,
@@ -215,6 +223,7 @@ export function useTimer(onTaskCompleted?: () => void) {
     start,
     pause,
     reset,
+    stop,
     skip,
   };
 }

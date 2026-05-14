@@ -14,17 +14,20 @@ type TaskInputProps = {
 export function TaskInput({ onSubmit, placeholder = 'Add a task' }: TaskInputProps) {
   const colors = useColors();
   const [title, setTitle] = useState('');
+  const [duration, setDuration] = useState('');
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
     const nextTitle = compactTitle(title);
+    const durationMinutes = duration ? parseInt(duration, 10) : null;
     if (!nextTitle || saving) {
       return;
     }
 
     setSaving(true);
-    await onSubmit({ title: nextTitle });
+    await onSubmit({ title: nextTitle, durationMinutes });
     setTitle('');
+    setDuration('');
     setSaving(false);
   };
 
@@ -36,6 +39,14 @@ export function TaskInput({ onSubmit, placeholder = 'Add a task' }: TaskInputPro
         value={title}
         onChangeText={setTitle}
         onSubmitEditing={submit}
+        style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+      />
+      <TextInput
+        placeholder="Duration (minutes)"
+        placeholderTextColor={colors.muted}
+        value={duration}
+        onChangeText={setDuration}
+        keyboardType="numeric"
         style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
       />
       <Button disabled={saving || !compactTitle(title)} title="Add" onPress={submit} />

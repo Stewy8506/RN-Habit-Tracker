@@ -63,6 +63,7 @@ export default function FocusScreen() {
     start,
     pause,
     reset,
+    stop,
     skip,
   } = useTimer(() => router.push('/(tabs)/tasks'));
 
@@ -72,10 +73,14 @@ export default function FocusScreen() {
   const selectedTaskId = useTimerStore((s) => s.selectedTaskId);
 
   useEffect(() => {
-    if (selectedTaskId && !isRunning && mode === 'focus') {
+    // Only auto-start if we have a task and it's NOT already running.
+    // However, if the user manually reset the timer (secondsLeft === focusDurationSeconds),
+    // we should respect that and NOT auto-start again immediately.
+    const isAtStart = secondsLeft === focusDurationSeconds;
+    if (selectedTaskId && !isRunning && mode === 'focus' && !isAtStart) {
       start();
     }
-  }, [selectedTaskId, isRunning, mode, start]);
+  }, [selectedTaskId, isRunning, mode, start, secondsLeft, focusDurationSeconds]);
 
   const progress =
     secondsLeft / getModeDuration(mode, focusDurationSeconds, shortBreakDurationSeconds, longBreakDurationSeconds);
