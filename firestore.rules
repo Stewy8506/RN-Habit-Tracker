@@ -3,6 +3,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // =========================
+    // Auth Helpers
+    // =========================
+
     function signedIn() {
       return request.auth != null;
     }
@@ -10,6 +14,10 @@ service cloud.firestore {
     function ownsUserPath(userId) {
       return signedIn() && request.auth.uid == userId;
     }
+
+    // =========================
+    // User Settings Validation
+    // =========================
 
     function validUserSettings(data) {
       return data.keys().hasOnly([
@@ -19,24 +27,34 @@ service cloud.firestore {
           'longBreakInterval',
           'updatedAt'
         ])
+
         && (data.focusDurationSeconds == null ||
             (data.focusDurationSeconds is int &&
              data.focusDurationSeconds > 0 &&
              data.focusDurationSeconds <= 14400))
+
         && (data.shortBreakDurationSeconds == null ||
             (data.shortBreakDurationSeconds is int &&
              data.shortBreakDurationSeconds > 0 &&
              data.shortBreakDurationSeconds <= 3600))
+
         && (data.longBreakDurationSeconds == null ||
             (data.longBreakDurationSeconds is int &&
              data.longBreakDurationSeconds > 0 &&
              data.longBreakDurationSeconds <= 7200))
+
         && (data.longBreakInterval == null ||
             (data.longBreakInterval is int &&
              data.longBreakInterval > 0 &&
              data.longBreakInterval <= 20))
-        && (data.updatedAt == null || data.updatedAt is timestamp);
+
+        && (data.updatedAt == null ||
+            data.updatedAt is timestamp);
     }
+
+    // =========================
+    // Task Validation
+    // =========================
 
     function validTask(data) {
       return data.keys().hasOnly([
@@ -66,7 +84,8 @@ service cloud.firestore {
 
         && data.completed is bool
 
-        && data.createdAt is timestamp
+        && (data.createdAt == null ||
+            data.createdAt is timestamp)
 
         && data.pomodoroCount is int
         && data.pomodoroCount >= 0
@@ -74,7 +93,8 @@ service cloud.firestore {
         && data.timeSpentSeconds is int
         && data.timeSpentSeconds >= 0
 
-        && (data.deadline == null || data.deadline is timestamp)
+        && (data.deadline == null ||
+            data.deadline is timestamp)
 
         && (data.durationMinutes == null ||
             (data.durationMinutes is int &&
@@ -91,6 +111,10 @@ service cloud.firestore {
         && (data.timerType == null ||
             data.timerType in ['pomodoro', 'regular']);
     }
+
+    // =========================
+    // Habit Validation
+    // =========================
 
     function validHabit(data) {
       return data.keys().hasOnly([
@@ -139,6 +163,10 @@ service cloud.firestore {
             data.timerType in ['pomodoro', 'regular']);
     }
 
+    // =========================
+    // Session Validation
+    // =========================
+
     function validSession(data) {
       return data.keys().hasOnly([
           'taskId',
@@ -163,18 +191,29 @@ service cloud.firestore {
 
         && data.completed is bool
 
-        && data.createdAt is timestamp;
+        && (data.createdAt == null ||
+            data.createdAt is timestamp);
     }
+
+    // =========================
+    // Users
+    // =========================
 
     match /users/{userId} {
 
-      allow read: if ownsUserPath(userId);
+      allow read:
+        if ownsUserPath(userId);
 
       allow create, update:
         if ownsUserPath(userId)
         && validUserSettings(request.resource.data);
 
-      allow delete: if false;
+      allow delete:
+        if false;
+
+      // =========================
+      // Tasks
+      // =========================
 
       match /tasks/{taskId} {
 
@@ -186,6 +225,10 @@ service cloud.firestore {
           && validTask(request.resource.data);
       }
 
+      // =========================
+      // Habits
+      // =========================
+
       match /habits/{habitId} {
 
         allow read, delete:
@@ -195,6 +238,10 @@ service cloud.firestore {
           if ownsUserPath(userId)
           && validHabit(request.resource.data);
       }
+
+      // =========================
+      // Sessions
+      // =========================
 
       match /sessions/{sessionId} {
 
