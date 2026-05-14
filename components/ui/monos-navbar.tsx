@@ -1,8 +1,9 @@
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { GlassEffectView } from 'react-native-glass-effect-view';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type RouteIconName = keyof typeof Ionicons.glyphMap;
@@ -53,12 +54,25 @@ export function MonosNavbar({ state, descriptors, navigation }: BottomTabBarProp
   const bar = <View style={styles.row}>{items}</View>;
 
   return (
-    <View style={[styles.safeArea, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-      <View style={styles.shadow}>
-        <GlassEffectView appearance="dark" useNative={false} style={styles.pill}>
+    <View style={styles.wrapper} pointerEvents="box-none">
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.85)', '#000000']}
+        style={styles.gradient}
+        pointerEvents="none"
+      />
+      {Platform.OS === 'ios' && isLiquidGlassSupported ? (
+        <View style={[styles.safeArea, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View style={styles.shadow}>
+            <LiquidGlassView interactive effect="clear" style={styles.pill}>
+              {bar}
+            </LiquidGlassView>
+          </View>
+        </View>
+      ) : (
+        <View style={[styles.androidNavbar, { paddingBottom: insets.bottom }]}>
           {bar}
-        </GlassEffectView>
-      </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -66,6 +80,19 @@ export function MonosNavbar({ state, descriptors, navigation }: BottomTabBarProp
 export default MonosNavbar;
 
 const styles = StyleSheet.create({
+  wrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  gradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 140,
+  },
   safeArea: {
     position: 'absolute',
     bottom: 0,
@@ -84,20 +111,29 @@ const styles = StyleSheet.create({
     elevation: 16,
   },
   pill: {
-    height: 60,
-    width: '100%',
     borderRadius: 40,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: 'rgba(15,15,15,0.45)',
+    backgroundColor: 'rgba(20,20,20,0.25)',
+  },
+  androidNavbar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#161616', // Material 3 UI dark surface container
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
+    elevation: 8,
   },
   row: {
-    height: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
+    paddingVertical: 10,
     paddingHorizontal: 16,
+    minHeight: 40,
   },
   item: {
     flex: 1,
