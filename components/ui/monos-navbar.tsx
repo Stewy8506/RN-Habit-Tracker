@@ -1,8 +1,8 @@
-import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { GlassEffectView } from 'react-native-glass-effect-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type RouteIconName = keyof typeof Ionicons.glyphMap;
@@ -30,6 +30,7 @@ export function MonosNavbar({ state, descriptors, navigation }: BottomTabBarProp
     const iconColor = focused ? '#FFFFFF' : 'rgba(255,255,255,0.38)';
 
     const onPress = () => {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const event = navigation.emit({
         type: 'tabPress',
         target: route.key,
@@ -52,19 +53,12 @@ export function MonosNavbar({ state, descriptors, navigation }: BottomTabBarProp
   const bar = <View style={styles.row}>{items}</View>;
 
   return (
-    <View style={[styles.safeArea, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-      {isLiquidGlassSupported ? (
-        <LiquidGlassView interactive effect="clear" style={styles.pill}>
+    <View style={[styles.safeArea, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={styles.shadow}>
+        <GlassEffectView appearance="dark" useNative={false} style={styles.pill}>
           {bar}
-        </LiquidGlassView>
-      ) : (
-        <View style={styles.shadow}>
-          <BlurView intensity={55} tint="dark" style={styles.pill}>
-            <View style={[StyleSheet.absoluteFillObject, styles.tint]} />
-            {bar}
-          </BlurView>
-        </View>
-      )}
+        </GlassEffectView>
+      </View>
     </View>
   );
 }
@@ -73,6 +67,10 @@ export default MonosNavbar;
 
 const styles = StyleSheet.create({
   safeArea: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: 48,
     paddingTop: 8,
     backgroundColor: 'transparent',
@@ -81,27 +79,25 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowOpacity: 0.5,
+    shadowRadius: 24,
+    elevation: 16,
   },
   pill: {
+    height: 60,
+    width: '100%',
     borderRadius: 40,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(20,20,20,0.82)',
-  },
-  tint: {
-    backgroundColor: 'rgba(15,15,15,0.7)',
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(15,15,15,0.45)',
   },
   row: {
+    height: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingVertical: 10,
     paddingHorizontal: 16,
-    minHeight: 60,
   },
   item: {
     flex: 1,

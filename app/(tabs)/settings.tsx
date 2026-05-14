@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     gap: 18,
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 110,
     paddingTop: 64,
   },
   title: {

@@ -631,7 +631,7 @@ export default function TodayScreen() {
           ))
         ))}
 
-      <View style={{ height: 32 }} />
+      <View style={{ height: 110 }} />
     </ScrollView>
   );
 }
