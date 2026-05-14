@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 140,
+    height: 130,
   },
   safeArea: {
     position: 'absolute',
@@ -122,9 +122,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#161616', // Material 3 UI dark surface container
+    backgroundColor: '#000000ff', // Material 3 UI dark surface container
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: 'rgba(15, 15, 15, 0.05)',
     elevation: 8,
   },
   row: {
