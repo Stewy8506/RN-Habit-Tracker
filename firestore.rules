@@ -2,12 +2,40 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function signedIn() {
       return request.auth != null;
     }
 
     function ownsUserPath(userId) {
       return signedIn() && request.auth.uid == userId;
+    }
+
+    function validUserSettings(data) {
+      return data.keys().hasOnly([
+          'focusDurationSeconds',
+          'shortBreakDurationSeconds',
+          'longBreakDurationSeconds',
+          'longBreakInterval',
+          'updatedAt'
+        ])
+        && (data.focusDurationSeconds == null ||
+            (data.focusDurationSeconds is int &&
+             data.focusDurationSeconds > 0 &&
+             data.focusDurationSeconds <= 14400))
+        && (data.shortBreakDurationSeconds == null ||
+            (data.shortBreakDurationSeconds is int &&
+             data.shortBreakDurationSeconds > 0 &&
+             data.shortBreakDurationSeconds <= 3600))
+        && (data.longBreakDurationSeconds == null ||
+            (data.longBreakDurationSeconds is int &&
+             data.longBreakDurationSeconds > 0 &&
+             data.longBreakDurationSeconds <= 7200))
+        && (data.longBreakInterval == null ||
+            (data.longBreakInterval is int &&
+             data.longBreakInterval > 0 &&
+             data.longBreakInterval <= 20))
+        && (data.updatedAt == null || data.updatedAt is timestamp);
     }
 
     function validTask(data) {
@@ -18,22 +46,50 @@ service cloud.firestore {
           'pomodoroCount',
           'deadline',
           'durationMinutes',
+          'timeSpentSeconds',
           'icon',
           'priority',
           'timerType'
         ])
+
+        && data.keys().hasAll([
+          'title',
+          'completed',
+          'createdAt',
+          'pomodoroCount',
+          'timeSpentSeconds'
+        ])
+
         && data.title is string
         && data.title.size() > 0
         && data.title.size() <= 160
+
         && data.completed is bool
+
         && data.createdAt is timestamp
+
         && data.pomodoroCount is int
         && data.pomodoroCount >= 0
+
+        && data.timeSpentSeconds is int
+        && data.timeSpentSeconds >= 0
+
         && (data.deadline == null || data.deadline is timestamp)
-        && (data.durationMinutes == null || (data.durationMinutes is int && data.durationMinutes > 0))
-        && (data.icon == null || data.icon is string)
-        && (data.priority == null || data.priority in ['low', 'medium', 'high'])
-        && (data.timerType == null || data.timerType in ['pomodoro', 'regular']);
+
+        && (data.durationMinutes == null ||
+            (data.durationMinutes is int &&
+             data.durationMinutes > 0 &&
+             data.durationMinutes <= 1440))
+
+        && (data.icon == null ||
+            (data.icon is string &&
+             data.icon.size() <= 40))
+
+        && (data.priority == null ||
+            data.priority in ['low', 'medium', 'high'])
+
+        && (data.timerType == null ||
+            data.timerType in ['pomodoro', 'regular']);
     }
 
     function validHabit(data) {
@@ -47,17 +103,40 @@ service cloud.firestore {
           'durationMinutes',
           'timerType'
         ])
+
+        && data.keys().hasAll([
+          'name',
+          'streak'
+        ])
+
         && data.name is string
         && data.name.size() > 0
         && data.name.size() <= 120
+
         && data.streak is int
         && data.streak >= 0
-        && (data.lastCompleted == null || data.lastCompleted is timestamp)
-        && (data.icon == null || data.icon is string)
-        && (data.priority == null || data.priority in ['low', 'medium', 'high'])
-        && (data.category == null || data.category is string)
-        && (data.durationMinutes == null || (data.durationMinutes is int && data.durationMinutes > 0))
-        && (data.timerType == null || data.timerType in ['pomodoro', 'regular']);
+
+        && (data.lastCompleted == null ||
+            data.lastCompleted is timestamp)
+
+        && (data.icon == null ||
+            (data.icon is string &&
+             data.icon.size() <= 40))
+
+        && (data.priority == null ||
+            data.priority in ['low', 'medium', 'high'])
+
+        && (data.category == null ||
+            (data.category is string &&
+             data.category.size() <= 40))
+
+        && (data.durationMinutes == null ||
+            (data.durationMinutes is int &&
+             data.durationMinutes > 0 &&
+             data.durationMinutes <= 1440))
+
+        && (data.timerType == null ||
+            data.timerType in ['pomodoro', 'regular']);
     }
 
     function validSession(data) {
@@ -67,32 +146,67 @@ service cloud.firestore {
           'completed',
           'createdAt'
         ])
-        && (data.taskId == null || data.taskId is string)
+
+        && data.keys().hasAll([
+          'duration',
+          'completed',
+          'createdAt'
+        ])
+
+        && (data.taskId == null ||
+            (data.taskId is string &&
+             data.taskId.size() <= 100))
+
         && data.duration is int
         && data.duration > 0
         && data.duration <= 86400
+
         && data.completed is bool
+
         && data.createdAt is timestamp;
     }
 
     match /users/{userId} {
-      allow read, create, update: if ownsUserPath(userId);
+
+      allow read: if ownsUserPath(userId);
+
+      allow create, update:
+        if ownsUserPath(userId)
+        && validUserSettings(request.resource.data);
+
       allow delete: if false;
 
       match /tasks/{taskId} {
-        allow read, delete: if ownsUserPath(userId);
-        allow create, update: if ownsUserPath(userId) && validTask(request.resource.data);
+
+        allow read, delete:
+          if ownsUserPath(userId);
+
+        allow create, update:
+          if ownsUserPath(userId)
+          && validTask(request.resource.data);
       }
 
       match /habits/{habitId} {
-        allow read, delete: if ownsUserPath(userId);
-        allow create, update: if ownsUserPath(userId) && validHabit(request.resource.data);
+
+        allow read, delete:
+          if ownsUserPath(userId);
+
+        allow create, update:
+          if ownsUserPath(userId)
+          && validHabit(request.resource.data);
       }
 
       match /sessions/{sessionId} {
-        allow read: if ownsUserPath(userId);
-        allow create: if ownsUserPath(userId) && validSession(request.resource.data);
-        allow update, delete: if false;
+
+        allow read:
+          if ownsUserPath(userId);
+
+        allow create:
+          if ownsUserPath(userId)
+          && validSession(request.resource.data);
+
+        allow update, delete:
+          if false;
       }
     }
   }
