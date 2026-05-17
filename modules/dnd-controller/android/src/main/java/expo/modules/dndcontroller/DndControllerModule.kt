@@ -213,7 +213,6 @@ class DndControllerModule : Module() {
       )
 
       alarmManager.cancel(pendingIntent)
-      AlarmReceiver.stopAlarm()
       true
     }
   }
