@@ -67,7 +67,12 @@ export default function FocusScreen() {
     reset,
     stop,
     skip,
-  } = useTimer(() => router.replace('/alarm' as any));
+  } = useTimer(() => {
+    setTimeout(() => {
+      console.log('[FocusScreen] Navigating to /alarm');
+      router.push('/alarm' as any);
+    }, 0);
+  });
 
   const setFocusDurationSeconds = useTimerStore((s) => s.setFocusDurationSeconds);
   const setShortBreakDurationSeconds = useTimerStore((s) => s.setShortBreakDurationSeconds);

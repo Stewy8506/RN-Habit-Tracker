@@ -46,9 +46,15 @@ class DndControllerModule : Module() {
     manager.setNotificationPolicy(policy)
   }
 
-  private fun stopAlarmPlayback() {
+  private fun stopAlarmPlaybackInternal() {
     alarmRingtone?.stop()
     alarmRingtone = null
+  }
+
+  private fun stopAlarmPlayback() {
+    mainHandler.post {
+      stopAlarmPlaybackInternal()
+    }
   }
 
   override fun definition() = ModuleDefinition {
@@ -106,7 +112,7 @@ class DndControllerModule : Module() {
         manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
         lastError = null
         currentInterruptionFilter(manager) == NotificationManager.INTERRUPTION_FILTER_NONE
-      } catch (error: RuntimeException) {
+      } catch (error: Throwable) {
         lastError = error.message ?: error.javaClass.simpleName
         false
       }
@@ -132,7 +138,7 @@ class DndControllerModule : Module() {
         manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
         lastError = null
         currentInterruptionFilter(manager) == NotificationManager.INTERRUPTION_FILTER_ALL
-      } catch (error: RuntimeException) {
+      } catch (error: Throwable) {
         lastError = error.message ?: error.javaClass.simpleName
         false
       }
@@ -145,7 +151,6 @@ class DndControllerModule : Module() {
       }
 
       try {
-        stopAlarmPlayback()
         val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
           ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
           ?: run {
@@ -167,12 +172,19 @@ class DndControllerModule : Module() {
           ringtone.isLooping = true
         }
 
-        alarmRingtone = ringtone
-        ringtone.play()
+        mainHandler.post {
+          try {
+            stopAlarmPlaybackInternal()
+            alarmRingtone = ringtone
+            ringtone.play()
+          } catch (e: Throwable) {
+            lastError = e.message ?: e.javaClass.simpleName
+          }
+        }
         mainHandler.postDelayed({ stopAlarmPlayback() }, 60000)
         lastError = null
         true
-      } catch (error: RuntimeException) {
+      } catch (error: Throwable) {
         lastError = error.message ?: error.javaClass.simpleName
         false
       }
@@ -183,7 +195,7 @@ class DndControllerModule : Module() {
         stopAlarmPlayback()
         lastError = null
         true
-      } catch (error: RuntimeException) {
+      } catch (error: Throwable) {
         lastError = error.message ?: error.javaClass.simpleName
         false
       }

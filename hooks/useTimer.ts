@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { disableDnd, enableDnd } from '@/services/dndService';
 import { completeHabit as completeHabitDoc, completeTask, updateTaskTimeSpent } from '@/services/firestoreService';
@@ -9,6 +9,10 @@ import { useTaskStore } from '@/store/useTaskStore';
 import { useTimerStore } from '@/store/useTimerStore';
 import { FocusMode } from '@/types/session';
 export function useTimer(onTaskCompleted?: () => void) {
+  const onTaskCompletedRef = useRef(onTaskCompleted);
+  useEffect(() => {
+    onTaskCompletedRef.current = onTaskCompleted;
+  }, [onTaskCompleted]);
   const userId = useSettingsStore((state) => state.userId);
   const longBreakInterval = useSettingsStore((state) => state.longBreakInterval);
   const tasks = useTaskStore((state) => state.tasks);
@@ -57,8 +61,11 @@ export function useTimer(onTaskCompleted?: () => void) {
     };
 
     const finishTimer = () => {
+      console.log('[useTimer] finishTimer called! Completed timer name:', selectedTimerName ?? 'Focus session');
       setCompletedTimerName(selectedTimerName ?? 'Focus session');
-      onTaskCompleted?.();
+      setTimeout(() => {
+        onTaskCompletedRef.current?.();
+      }, 0);
     };
 
     const completedMode = mode;
@@ -66,6 +73,8 @@ export function useTimer(onTaskCompleted?: () => void) {
     let nextDuration: number;
 
     setIsRunning(false);
+
+    console.log('[useTimer] completeInterval triggered. mode:', completedMode, 'selectedTaskId:', selectedTaskId);
 
     if (completedMode === 'focus') {
       const matchingTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : null;
@@ -81,11 +90,10 @@ export function useTimer(onTaskCompleted?: () => void) {
       const completedFocusSeconds = currentDurationSeconds;
 
       if (selectedTaskId && habit) {
+        await runSafely('DND disable', disableDnd);
         finishTimer();
         clearSelection();
         setMode('focus', focusDurationSeconds);
-
-        await runSafely('DND disable', disableDnd);
         if (userId) {
           await runSafely('session save', () =>
             saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, false),
@@ -99,16 +107,18 @@ export function useTimer(onTaskCompleted?: () => void) {
 
       // Handle task completion
       if (selectedTaskId && task) {
+        console.log('[useTimer] selectedTaskId & task exist. Task:', task);
         if (task.durationMinutes) {
           const durationSeconds = task.durationMinutes * 60;
           const timeSpent = (task.timeSpentSeconds || 0) + completedFocusSeconds;
+          console.log('[useTimer] Task duration (secs):', durationSeconds, 'timeSpent (secs):', timeSpent, 'completedFocusSeconds:', completedFocusSeconds);
 
           if (timeSpent >= durationSeconds) {
+            console.log('[useTimer] Task fully completed! timeSpent >= durationSeconds. Navigating...');
+            await runSafely('DND disable', disableDnd);
             finishTimer();
             clearSelection();
             setMode('focus', focusDurationSeconds);
-
-            await runSafely('DND disable', disableDnd);
             if (userId) {
               await runSafely('session save', () =>
                 saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, true),
@@ -123,6 +133,7 @@ export function useTimer(onTaskCompleted?: () => void) {
             }
             return;
           } else {
+            console.log('[useTimer] Task NOT fully completed. timeSpent < durationSeconds. Continuing progress...');
             await runSafely('DND disable', disableDnd);
             if (userId) {
               await runSafely('session save', () =>
@@ -150,11 +161,10 @@ export function useTimer(onTaskCompleted?: () => void) {
       }
 
       if (selectedTaskId && task) {
+        await runSafely('DND disable', disableDnd);
         finishTimer();
         clearSelection();
         setMode('focus', focusDurationSeconds);
-
-        await runSafely('DND disable', disableDnd);
         if (userId) {
           await runSafely('session save', () =>
             saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, true),
@@ -165,11 +175,10 @@ export function useTimer(onTaskCompleted?: () => void) {
 
       if (selectedTimerType === 'regular') {
         // Regular mode ends after one deep focus block and does not auto-enter a break.
+        await runSafely('DND disable', disableDnd);
         finishTimer();
         clearSelection();
         setMode('focus', focusDurationSeconds);
-
-        await runSafely('DND disable', disableDnd);
         if (userId) {
           await runSafely('session save', () =>
             saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, false),
@@ -231,7 +240,6 @@ export function useTimer(onTaskCompleted?: () => void) {
     incrementCompletedPomodoros,
     tasks,
     selectedTimerName,
-    onTaskCompleted,
   ]);
 
   useEffect(() => {
