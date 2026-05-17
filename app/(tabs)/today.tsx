@@ -97,7 +97,10 @@ function HabitRow({
   ];
   const iconIndex = habit.name.length % icons.length;
   const iconName = (habit.icon as keyof typeof Ionicons.glyphMap) ?? icons[iconIndex];
-  const timerLabel = habit.timerType ? habit.timerType.toUpperCase() : null;
+  const focusDurationSeconds = useTimerStore.getState().focusDurationSeconds;
+  const isDurationLessThanFocus = habit.durationMinutes != null && habit.durationMinutes < (focusDurationSeconds / 60);
+  const resolvedTimerType = isDurationLessThanFocus ? 'regular' : habit.timerType;
+  const timerLabel = (resolvedTimerType && resolvedTimerType !== 'regular') ? resolvedTimerType.toUpperCase() : null;
 
   return (
     <Pressable
@@ -160,7 +163,10 @@ function TaskRow({
     ? task.deadline.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : null;
   const iconName = (task.icon as keyof typeof Ionicons.glyphMap) ?? 'stopwatch-outline';
-  const timerLabel = task.timerType ? task.timerType.toUpperCase() : null;
+  const focusDurationSeconds = useTimerStore.getState().focusDurationSeconds;
+  const isDurationLessThanFocus = task.durationMinutes != null && task.durationMinutes < (focusDurationSeconds / 60);
+  const resolvedTimerType = isDurationLessThanFocus ? 'regular' : task.timerType;
+  const timerLabel = (resolvedTimerType && resolvedTimerType !== 'regular') ? resolvedTimerType.toUpperCase() : null;
 
   return (
     <Pressable
@@ -397,7 +403,12 @@ export default function TodayScreen() {
     setSelectedTaskId(task.id);
     setSelectedTimerTargetType('task');
     setSelectedTimerName(task.title);
-    setSelectedTimerType(task.timerType ?? 'regular');
+
+    // Resolve timer type based on allotted duration vs settings focus minutes
+    const isDurationLessThanFocus = task.durationMinutes != null && task.durationMinutes < (focusDurationSeconds / 60);
+    const resolvedTimerType = isDurationLessThanFocus ? 'regular' : (task.timerType ?? 'regular');
+
+    setSelectedTimerType(resolvedTimerType);
     setMode('focus', getNextTaskFocusSeconds(task, focusDurationSeconds));
     requestAutoStart();
     router.push('/focus');
@@ -497,7 +508,9 @@ export default function TodayScreen() {
             <View style={styles.activeTimerRow}>
               <Text style={styles.activeTimerName}>{selectedTimerName}</Text>
               <Text style={styles.activeTimerTime}>
-                {formatTimerLabel(secondsLeft)} · {selectedTimerType?.toUpperCase()}
+                {selectedTimerType && selectedTimerType !== 'regular'
+                  ? `${formatTimerLabel(secondsLeft)} · ${selectedTimerType.toUpperCase()}`
+                  : formatTimerLabel(secondsLeft)}
               </Text>
             </View>
           </Pressable>
@@ -825,7 +838,10 @@ function HabitRowPreview({ habit }: { habit: Habit }) {
   ];
   const iconIndex = habit.name.length % icons.length;
   const iconName = (habit.icon as keyof typeof Ionicons.glyphMap) ?? icons[iconIndex];
-  const timerLabel = habit.timerType ? habit.timerType.toUpperCase() : null;
+  const focusDurationSeconds = useTimerStore.getState().focusDurationSeconds;
+  const isDurationLessThanFocus = habit.durationMinutes != null && habit.durationMinutes < (focusDurationSeconds / 60);
+  const resolvedTimerType = isDurationLessThanFocus ? 'regular' : habit.timerType;
+  const timerLabel = (resolvedTimerType && resolvedTimerType !== 'regular') ? resolvedTimerType.toUpperCase() : null;
 
   return (
     <View style={[styles.habitRow, doneToday && styles.habitRowDone, { paddingHorizontal: 12 }]}>
@@ -855,7 +871,10 @@ function TaskRowPreview({ task }: { task: Task }) {
   const duration = task.durationMinutes ?? (task.pomodoroCount > 0 ? task.pomodoroCount * 25 : null);
   const deadlineText = task.deadline ? task.deadline.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
   const iconName = (task.icon as keyof typeof Ionicons.glyphMap) ?? 'stopwatch-outline';
-  const timerLabel = task.timerType ? task.timerType.toUpperCase() : null;
+  const focusDurationSeconds = useTimerStore.getState().focusDurationSeconds;
+  const isDurationLessThanFocus = task.durationMinutes != null && task.durationMinutes < (focusDurationSeconds / 60);
+  const resolvedTimerType = isDurationLessThanFocus ? 'regular' : task.timerType;
+  const timerLabel = (resolvedTimerType && resolvedTimerType !== 'regular') ? resolvedTimerType.toUpperCase() : null;
 
   return (
     <View style={[styles.taskRow, task.completed && styles.taskRowDone, { paddingHorizontal: 12, borderBottomWidth: 0 }]}>

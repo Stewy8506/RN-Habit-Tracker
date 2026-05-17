@@ -99,7 +99,12 @@ export default function HomeScreen() {
   const startFocus = () => {
     setSelectedTaskId(nextTask?.id ?? null);
     setSelectedTimerTargetType(nextTask ? 'task' : null);
-    setSelectedTimerType(nextTask?.timerType ?? 'regular');
+    
+    // Resolve timer type based on allotted duration vs settings focus minutes
+    const isDurationLessThanFocus = nextTask?.durationMinutes != null && nextTask.durationMinutes < (focusDurationSeconds / 60);
+    const resolvedTimerType = isDurationLessThanFocus ? 'regular' : (nextTask?.timerType ?? 'regular');
+    
+    setSelectedTimerType(resolvedTimerType);
     setSelectedTimerName(nextTask?.title ?? null);
     if (nextTask) {
       setMode('focus', getNextTaskFocusSeconds(nextTask, focusDurationSeconds));
