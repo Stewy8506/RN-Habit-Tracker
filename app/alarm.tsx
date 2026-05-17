@@ -11,15 +11,19 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { stopTimerAlarm, triggerTimerAlarm } from '@/services/alarmService';
+import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
 
 export default function AlarmScreen() {
   const router = useRouter();
+  const triggerAlarmEnabled = useSettingsStore((state) => state.triggerAlarmEnabled);
   const completedTimerName = useTimerStore((state) => state.completedTimerName);
   const pulse = useSharedValue(0);
 
   useEffect(() => {
-    void triggerTimerAlarm();
+    if (triggerAlarmEnabled) {
+      void triggerTimerAlarm();
+    }
 
     pulse.value = withRepeat(
       withTiming(1, { duration: 900, easing: Easing.inOut(Easing.cubic) }),
@@ -28,7 +32,7 @@ export default function AlarmScreen() {
     );
 
     return () => stopTimerAlarm();
-  }, [pulse]);
+  }, [pulse, triggerAlarmEnabled]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     opacity: 0.2 + pulse.value * 0.35,
@@ -52,7 +56,7 @@ export default function AlarmScreen() {
       <View style={styles.copy}>
         <Text style={styles.eyebrow}>TIMER COMPLETE</Text>
         <Text style={styles.title}>{completedTimerName ?? 'Focus session'}</Text>
-        <Text style={styles.subtitle}>Alarm is ringing</Text>
+        <Text style={styles.subtitle}>{triggerAlarmEnabled ? 'Alarm is ringing' : 'Timer finished'}</Text>
       </View>
 
       <Pressable
@@ -60,7 +64,7 @@ export default function AlarmScreen() {
         onPress={stopAlarm}
         style={({ pressed }) => [styles.stopButton, pressed && styles.stopButtonPressed]}>
         <Ionicons name="stop" size={24} color="#FFFFFF" />
-        <Text style={styles.stopText}>Stop Alarm</Text>
+        <Text style={styles.stopText}>{triggerAlarmEnabled ? 'Stop Alarm' : 'Done'}</Text>
       </Pressable>
     </View>
   );

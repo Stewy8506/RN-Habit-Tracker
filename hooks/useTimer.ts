@@ -68,14 +68,16 @@ export function useTimer(onTaskCompleted?: () => void) {
     setIsRunning(false);
 
     if (completedMode === 'focus') {
+      const matchingTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : null;
+      const matchingHabit = selectedTaskId ? habits.find(h => h.id === selectedTaskId) : null;
       const task =
-        selectedTaskId && selectedTimerTargetType === 'task'
-          ? tasks.find(t => t.id === selectedTaskId)
-          : null;
+        selectedTimerTargetType === 'habit'
+          ? null
+          : matchingTask;
       const habit =
-        selectedTaskId && selectedTimerTargetType === 'habit'
-          ? habits.find(h => h.id === selectedTaskId)
-          : null;
+        selectedTimerTargetType === 'task'
+          ? null
+          : matchingHabit;
       const completedFocusSeconds = currentDurationSeconds;
 
       if (selectedTaskId && habit) {
@@ -145,6 +147,20 @@ export function useTimer(onTaskCompleted?: () => void) {
             return;
           }
         }
+      }
+
+      if (selectedTaskId && task) {
+        finishTimer();
+        clearSelection();
+        setMode('focus', focusDurationSeconds);
+
+        await runSafely('DND disable', disableDnd);
+        if (userId) {
+          await runSafely('session save', () =>
+            saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, true),
+          );
+        }
+        return;
       }
 
       if (selectedTimerType === 'regular') {
