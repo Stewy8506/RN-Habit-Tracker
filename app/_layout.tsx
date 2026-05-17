@@ -1,8 +1,10 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import 'react-native-reanimated';
+import * as Notifications from 'expo-notifications';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ensureAnonymousAuth, subscribeToAuth } from '@/services/authService';
@@ -12,12 +14,56 @@ import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
 import { warnOnReject } from '@/utils/promises';
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldVibrate: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldSetBadge: true,
+  }),
+});
+
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
 export default function RootLayout() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    // Request notification permissions and setup channel
+    void (async () => {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        await Notifications.requestPermissionsAsync();
+      }
+      
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('alarm-channel', {
+          name: 'Timer Alarm',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 700, 250, 700, 250, 1100],
+          lightColor: '#FF231F7C',
+          enableVibrate: true,
+          bypassDnd: true,
+          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        });
+      }
+    })();
+
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      // Tap notification -> push to alarm page
+      setTimeout(() => {
+        router.push('/alarm' as any);
+      }, 0);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [router]);
   const setUserId = useSettingsStore((state) => state.setUserId);
   const setAuthLoading = useSettingsStore((state) => state.setAuthLoading);
   const setDndEnabled = useSettingsStore((state) => state.setDndEnabled);

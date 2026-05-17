@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
+import * as Notifications from 'expo-notifications';
+import { AppState, AppStateStatus } from 'react-native';
 
 import { disableDnd, enableDnd } from '@/services/dndService';
 import { completeHabit as completeHabitDoc, completeTask, updateTaskTimeSpent } from '@/services/firestoreService';
@@ -8,11 +10,62 @@ import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { useTimerStore } from '@/store/useTimerStore';
 import { FocusMode } from '@/types/session';
+
+const ONGOING_NOTIFICATION_ID = 'ongoing-timer-notification';
+
+const scheduleTimerNotification = async (secondsLeft: number, timerName: string | null) => {
+  await Notifications.cancelAllScheduledNotificationsAsync();
+  if (secondsLeft <= 0) return;
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Session Completed! 🎉',
+      body: timerName ? `Your session "${timerName}" is done.` : 'Your focus session is finished. Time for a break!',
+      sound: 'default',
+      priority: Notifications.AndroidNotificationPriority.MAX,
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: secondsLeft,
+      channelId: 'alarm-channel',
+    },
+  });
+};
+
+const showOngoingTimerNotification = async (secondsLeft: number, timerName: string | null) => {
+  if (secondsLeft <= 0) return;
+
+  const endTimestamp = Date.now() + secondsLeft * 1000;
+  const endTimeStr = new Date(endTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  await Notifications.scheduleNotificationAsync({
+    identifier: ONGOING_NOTIFICATION_ID,
+    content: {
+      title: 'Focus Session in Progress ⏱️',
+      body: `"${timerName ?? 'Focus'}" is running • Ends at ${endTimeStr}`,
+      sticky: true,
+      priority: Notifications.AndroidNotificationPriority.LOW,
+    },
+    trigger: null,
+  });
+};
+
+const dismissOngoingTimerNotification = async () => {
+  await Notifications.dismissNotificationAsync(ONGOING_NOTIFICATION_ID);
+};
+
+const cancelTimerNotifications = async () => {
+  await Notifications.cancelAllScheduledNotificationsAsync();
+  await Notifications.dismissNotificationAsync(ONGOING_NOTIFICATION_ID);
+};
+
 export function useTimer(onTaskCompleted?: () => void) {
   const onTaskCompletedRef = useRef(onTaskCompleted);
   useEffect(() => {
     onTaskCompletedRef.current = onTaskCompleted;
   }, [onTaskCompleted]);
+  const appStateRef = useRef(AppState.currentState);
+  const backgroundTimeRef = useRef<number | null>(null);
   const userId = useSettingsStore((state) => state.userId);
   const longBreakInterval = useSettingsStore((state) => state.longBreakInterval);
   const tasks = useTaskStore((state) => state.tasks);
@@ -45,6 +98,7 @@ export function useTimer(onTaskCompleted?: () => void) {
   const resetStore = useTimerStore((state) => state.reset);
 
   const completeInterval = useCallback(async () => {
+    void cancelTimerNotifications();
     const runSafely = async (label: string, action: () => Promise<unknown>) => {
       try {
         await action();
@@ -235,6 +289,50 @@ export function useTimer(onTaskCompleted?: () => void) {
     selectedTimerName,
   ]);
 
+  const completeIntervalRef = useRef(completeInterval);
+  useEffect(() => {
+    completeIntervalRef.current = completeInterval;
+  }, [completeInterval]);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      const isTimerRunning = useTimerStore.getState().isRunning;
+
+      if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
+        void dismissOngoingTimerNotification();
+        if (isTimerRunning && backgroundTimeRef.current !== null) {
+          const elapsedSeconds = Math.round((Date.now() - backgroundTimeRef.current) / 1000);
+          const currentSeconds = useTimerStore.getState().secondsLeft;
+          const remaining = Math.max(0, currentSeconds - elapsedSeconds);
+
+          if (remaining <= 0) {
+            useTimerStore.getState().setSecondsLeft(0);
+            void completeIntervalRef.current().catch((error) => {
+              console.warn('Timer completion in background failed', error);
+              useTimerStore.getState().setIsRunning(false);
+            });
+          } else {
+            useTimerStore.getState().setSecondsLeft(remaining);
+          }
+        }
+        backgroundTimeRef.current = null;
+      } else if (nextAppState.match(/inactive|background/)) {
+        if (isTimerRunning) {
+          backgroundTimeRef.current = Date.now();
+          const currentSeconds = useTimerStore.getState().secondsLeft;
+          const currentName = useTimerStore.getState().selectedTimerName;
+          void showOngoingTimerNotification(currentSeconds, currentName);
+        }
+      }
+      appStateRef.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   useEffect(() => {
     if (!isRunning) {
       return;
@@ -247,7 +345,7 @@ export function useTimer(onTaskCompleted?: () => void) {
       const currentSeconds = useTimerStore.getState().secondsLeft;
       if (currentSeconds <= 1) {
         clearInterval(intervalId);
-        void completeInterval().catch((error) => {
+        void completeIntervalRef.current().catch((error) => {
           console.warn('Timer completion failed', error);
           useTimerStore.getState().setIsRunning(false);
         });
@@ -258,24 +356,29 @@ export function useTimer(onTaskCompleted?: () => void) {
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [completeInterval, isRunning]);
+  }, [isRunning]);
 
   const start = async () => {
     if (mode === 'focus') {
       await enableDnd();
     }
+    const currentSeconds = useTimerStore.getState().secondsLeft;
+    const currentName = useTimerStore.getState().selectedTimerName;
+    void scheduleTimerNotification(currentSeconds, currentName);
     setIsRunning(true);
   };
 
   const pause = async () => {
     setIsRunning(false);
     await disableDnd();
+    void cancelTimerNotifications();
   };
 
   const reset = async () => {
     setIsRunning(false);
     resetStore();
     await disableDnd();
+    void cancelTimerNotifications();
   };
 
   const skip = async () => {
@@ -313,10 +416,18 @@ export function useTimer(onTaskCompleted?: () => void) {
     }
 
     useTimerStore.getState().setMode(nextMode, nextDuration);
+
+    if (running) {
+      const nextName = useTimerStore.getState().selectedTimerName;
+      void scheduleTimerNotification(nextDuration, nextName);
+    } else {
+      void cancelTimerNotifications();
+    }
   };
 
   const stop = () => {
     setIsRunning(false);
+    void cancelTimerNotifications();
   };
 
   return {
