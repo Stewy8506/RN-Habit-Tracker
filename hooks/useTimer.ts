@@ -1,6 +1,5 @@
 import { useCallback, useEffect } from 'react';
 
-import { triggerTimerAlarm } from '@/services/alarmService';
 import { disableDnd, enableDnd } from '@/services/dndService';
 import { completeHabit as completeHabitDoc, completeTask, updateTaskTimeSpent } from '@/services/firestoreService';
 import { saveCompletedFocusSession } from '@/services/timerService';
@@ -12,7 +11,6 @@ import { FocusMode } from '@/types/session';
 export function useTimer(onTaskCompleted?: () => void) {
   const userId = useSettingsStore((state) => state.userId);
   const longBreakInterval = useSettingsStore((state) => state.longBreakInterval);
-  const triggerAlarmEnabled = useSettingsStore((state) => state.triggerAlarmEnabled);
   const tasks = useTaskStore((state) => state.tasks);
   const habits = useHabitStore((state) => state.habits);
   const mode = useTimerStore((state) => state.mode);
@@ -28,6 +26,7 @@ export function useTimer(onTaskCompleted?: () => void) {
   const selectedTimerTargetType = useTimerStore((state) => state.selectedTimerTargetType);
   const selectedTimerType = useTimerStore((state) => state.selectedTimerType);
   const selectedTimerName = useTimerStore((state) => state.selectedTimerName);
+  const completedTimerName = useTimerStore((state) => state.completedTimerName);
   const setMode = useTimerStore((state) => state.setMode);
   const setSecondsLeft = useTimerStore((state) => state.setSecondsLeft);
   const setIsRunning = useTimerStore((state) => state.setIsRunning);
@@ -35,6 +34,7 @@ export function useTimer(onTaskCompleted?: () => void) {
   const setSelectedTimerTargetType = useTimerStore((state) => state.setSelectedTimerTargetType);
   const setSelectedTimerType = useTimerStore((state) => state.setSelectedTimerType);
   const setSelectedTimerName = useTimerStore((state) => state.setSelectedTimerName);
+  const setCompletedTimerName = useTimerStore((state) => state.setCompletedTimerName);
   const incrementCompletedPomodoros = useTimerStore((state) => state.incrementCompletedPomodoros);
   const requestAutoStart = useTimerStore((state) => state.requestAutoStart);
   const consumeAutoStart = useTimerStore((state) => state.consumeAutoStart);
@@ -56,10 +56,8 @@ export function useTimer(onTaskCompleted?: () => void) {
       setSelectedTimerName(null);
     };
 
-    const finishTimer = async () => {
-      if (triggerAlarmEnabled) {
-        await runSafely('alarm trigger', triggerTimerAlarm);
-      }
+    const finishTimer = () => {
+      setCompletedTimerName(selectedTimerName ?? 'Focus session');
       onTaskCompleted?.();
     };
 
@@ -80,21 +78,20 @@ export function useTimer(onTaskCompleted?: () => void) {
           : null;
       const completedFocusSeconds = currentDurationSeconds;
 
-      // After focus, save deep-work session first.
-      await runSafely('DND disable', disableDnd);
-      if (userId) {
-        await runSafely('session save', () =>
-          saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, Boolean(task)),
-        );
-      }
-
       if (selectedTaskId && habit) {
+        finishTimer();
+        clearSelection();
+        setMode('focus', focusDurationSeconds);
+
+        await runSafely('DND disable', disableDnd);
+        if (userId) {
+          await runSafely('session save', () =>
+            saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, false),
+          );
+        }
         if (userId) {
           await runSafely('habit completion update', () => completeHabitDoc(userId, habit));
         }
-        clearSelection();
-        setMode('focus', focusDurationSeconds);
-        await finishTimer();
         return;
       }
 
@@ -103,21 +100,37 @@ export function useTimer(onTaskCompleted?: () => void) {
         if (task.durationMinutes) {
           const durationSeconds = task.durationMinutes * 60;
           const timeSpent = (task.timeSpentSeconds || 0) + completedFocusSeconds;
-          if (userId) {
-            await runSafely('task progress update', () =>
-              updateTaskTimeSpent(userId, selectedTaskId, timeSpent),
-            );
-          }
+
           if (timeSpent >= durationSeconds) {
+            finishTimer();
+            clearSelection();
+            setMode('focus', focusDurationSeconds);
+
+            await runSafely('DND disable', disableDnd);
+            if (userId) {
+              await runSafely('session save', () =>
+                saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, true),
+              );
+              await runSafely('task progress update', () =>
+                updateTaskTimeSpent(userId, selectedTaskId, timeSpent),
+              );
+            }
             // Task completed
             if (userId) {
               await runSafely('task completion update', () => completeTask(userId, selectedTaskId));
             }
-            clearSelection();
-            setMode('focus', focusDurationSeconds);
-            await finishTimer();
             return;
           } else {
+            await runSafely('DND disable', disableDnd);
+            if (userId) {
+              await runSafely('session save', () =>
+                saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, true),
+              );
+              await runSafely('task progress update', () =>
+                updateTaskTimeSpent(userId, selectedTaskId, timeSpent),
+              );
+            }
+
             // Start another session for remaining time
             const remaining = durationSeconds - timeSpent;
             nextDuration = Math.min(remaining, focusDurationSeconds);
@@ -136,10 +149,24 @@ export function useTimer(onTaskCompleted?: () => void) {
 
       if (selectedTimerType === 'regular') {
         // Regular mode ends after one deep focus block and does not auto-enter a break.
+        finishTimer();
         clearSelection();
         setMode('focus', focusDurationSeconds);
-        await finishTimer();
+
+        await runSafely('DND disable', disableDnd);
+        if (userId) {
+          await runSafely('session save', () =>
+            saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, false),
+          );
+        }
         return;
+      }
+
+      await runSafely('DND disable', disableDnd);
+      if (userId) {
+        await runSafely('session save', () =>
+          saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, Boolean(task)),
+        );
       }
 
       // After focus, determine break type based on long break interval for pomodoro.
@@ -182,11 +209,12 @@ export function useTimer(onTaskCompleted?: () => void) {
     setMode,
     setSelectedTimerName,
     setSelectedTimerType,
+    setCompletedTimerName,
     shortBreakDurationSeconds,
     userId,
     incrementCompletedPomodoros,
     tasks,
-    triggerAlarmEnabled,
+    selectedTimerName,
     onTaskCompleted,
   ]);
 
@@ -287,6 +315,7 @@ export function useTimer(onTaskCompleted?: () => void) {
     selectedTimerTargetType,
     selectedTimerType,
     selectedTimerName,
+    completedTimerName,
     autoStartRequested,
     setSelectedTaskId,
     setSelectedTimerTargetType,

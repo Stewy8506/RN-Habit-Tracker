@@ -20,6 +20,7 @@ type TimerState = {
   selectedTimerTargetType: TimerTargetType | null;
   selectedTimerType: TimerType | null;
   selectedTimerName: string | null;
+  completedTimerName: string | null;
   setMode: (mode: FocusMode, secondsLeft: number) => void;
   setSecondsLeft: (secondsLeft: number) => void;
   setFocusDurationSeconds: (seconds: number) => void;
@@ -36,6 +37,7 @@ type TimerState = {
   setSelectedTimerTargetType: (targetType: TimerTargetType | null) => void;
   setSelectedTimerType: (timerType: TimerType | null) => void;
   setSelectedTimerName: (timerName: string | null) => void;
+  setCompletedTimerName: (timerName: string | null) => void;
   reset: () => void;
 };
 
@@ -53,6 +55,7 @@ export const useTimerStore = create<TimerState>((set) => ({
   selectedTimerTargetType: null,
   selectedTimerType: null,
   selectedTimerName: null,
+  completedTimerName: null,
   setMode: (mode, secondsLeft) => set({ mode, secondsLeft, currentDurationSeconds: secondsLeft }),
   setSecondsLeft: (secondsLeft) => set({ secondsLeft }),
   setFocusDurationSeconds: (focusDurationSeconds) =>
@@ -120,6 +123,7 @@ export const useTimerStore = create<TimerState>((set) => ({
   setSelectedTimerTargetType: (selectedTimerTargetType) => set({ selectedTimerTargetType }),
   setSelectedTimerType: (selectedTimerType) => set({ selectedTimerType }),
   setSelectedTimerName: (selectedTimerName) => set({ selectedTimerName }),
+  setCompletedTimerName: (completedTimerName) => set({ completedTimerName }),
   reset: () =>
     set((state) => ({
       mode: 'focus',

@@ -10,15 +10,17 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { stopTimerAlarm } from '@/services/alarmService';
+import { stopTimerAlarm, triggerTimerAlarm } from '@/services/alarmService';
 import { useTimerStore } from '@/store/useTimerStore';
 
 export default function AlarmScreen() {
   const router = useRouter();
-  const selectedTimerName = useTimerStore((state) => state.selectedTimerName);
+  const completedTimerName = useTimerStore((state) => state.completedTimerName);
   const pulse = useSharedValue(0);
 
   useEffect(() => {
+    void triggerTimerAlarm();
+
     pulse.value = withRepeat(
       withTiming(1, { duration: 900, easing: Easing.inOut(Easing.cubic) }),
       -1,
@@ -49,7 +51,7 @@ export default function AlarmScreen() {
 
       <View style={styles.copy}>
         <Text style={styles.eyebrow}>TIMER COMPLETE</Text>
-        <Text style={styles.title}>{selectedTimerName ?? 'Focus session'}</Text>
+        <Text style={styles.title}>{completedTimerName ?? 'Focus session'}</Text>
         <Text style={styles.subtitle}>Alarm is ringing</Text>
       </View>
 
