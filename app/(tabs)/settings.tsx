@@ -127,7 +127,7 @@ export default function SettingsScreen() {
   return (
     <Animated.View style={[{ flex: 1, backgroundColor: colors.background }, animatedStyle]}>
       <ScrollView 
-      contentContainerStyle={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top + 60 + 12 }]}
+      contentContainerStyle={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top + 54 + 12 }]}
       showsVerticalScrollIndicator={true}
       keyboardShouldPersistTaps="handled"
     >

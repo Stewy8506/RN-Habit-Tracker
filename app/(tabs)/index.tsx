@@ -114,7 +114,7 @@ export default function HomeScreen() {
     <Animated.View style={[{ flex: 1, backgroundColor: BG }, animatedStyle]}>
       <ScrollView
         style={styles.root}
-        contentContainerStyle={[styles.screen, { paddingTop: insets.top + 60 + 12 }]}
+        contentContainerStyle={[styles.screen, { paddingTop: insets.top + 54 + 12 }]}
         showsVerticalScrollIndicator={false}>
 
       {/* ── Consistency Card ── */}

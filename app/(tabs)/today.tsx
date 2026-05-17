@@ -487,7 +487,7 @@ export default function TodayScreen() {
     <AnimatedReanimated.View style={[{ flex: 1, backgroundColor: BG }, animatedScreenStyle]}>
       <ScrollView
         style={styles.root}
-        contentContainerStyle={[styles.screen, { paddingTop: insets.top + 60 + 12 }]}
+        contentContainerStyle={[styles.screen, { paddingTop: insets.top + 54 + 12 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
 

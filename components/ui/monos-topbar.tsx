@@ -9,13 +9,13 @@ export function MonosTopbar() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.headerContainer, { height: insets.top + 60, paddingTop: insets.top + 12 }]}>
+    <View style={[styles.headerContainer, { height: insets.top + 54 }]}>
       <BlurView intensity={35} tint="dark" style={StyleSheet.absoluteFill}>
         <View style={styles.headerContent}>
           <Pressable style={styles.headerBtn} hitSlop={8}>
             <Ionicons name="menu" size={22} color="#FFFFFF" />
           </Pressable>
-          <Text style={styles.appName}>MONOS</Text>
+          <Text style={styles.appName}>MOMENTUM</Text>
           <Pressable
             style={styles.headerBtn}
             hitSlop={8}
@@ -42,10 +42,10 @@ const styles = StyleSheet.create({
   headerContent: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    height: 48,
+    paddingBottom: 8,
   },
   headerBtn: {
     width: 36,
