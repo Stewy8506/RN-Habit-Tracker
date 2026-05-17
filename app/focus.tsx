@@ -46,6 +46,7 @@ function indicesToSecs(minsIdx: number, secsIdx: number) {
 export default function FocusScreen() {
   const router = useRouter();
   const userId = useSettingsStore((state) => state.userId);
+  const triggerAlarmEnabled = useSettingsStore((state) => state.triggerAlarmEnabled);
 
   const [todayStats, setTodayStats] = useState({
     duration: 4.5 * 60 * 60,
@@ -67,7 +68,7 @@ export default function FocusScreen() {
     reset,
     stop,
     skip,
-  } = useTimer(() => router.replace('/today' as any));
+  } = useTimer(() => router.replace(triggerAlarmEnabled ? '/alarm' : '/today' as any));
 
   const setFocusDurationSeconds = useTimerStore((s) => s.setFocusDurationSeconds);
   const setShortBreakDurationSeconds = useTimerStore((s) => s.setShortBreakDurationSeconds);

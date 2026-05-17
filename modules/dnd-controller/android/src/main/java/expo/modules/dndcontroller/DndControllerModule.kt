@@ -163,10 +163,13 @@ class DndControllerModule : Module() {
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+          ringtone.isLooping = true
+        }
 
         alarmRingtone = ringtone
         ringtone.play()
-        mainHandler.postDelayed({ stopAlarmPlayback() }, 12000)
+        mainHandler.postDelayed({ stopAlarmPlayback() }, 60000)
         lastError = null
         true
       } catch (error: RuntimeException) {
