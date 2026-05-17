@@ -7,6 +7,7 @@ import { disableDnd, enableDnd, getDndStatus, requestDndPolicyAccess } from '@/s
 import { updateUserTimerSettings } from '@/services/firestoreService';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
+import { warnOnReject } from '@/utils/promises';
 
 function clampMinutes(value: string) {
   const parsed = Number(value);
@@ -41,7 +42,7 @@ export default function SettingsScreen() {
     const seconds = minutes * 60;
     setFocusDurationMinutes(minutes);
     if (userId) {
-      void updateUserTimerSettings(userId, { focusDurationSeconds: seconds });
+      warnOnReject('Focus duration save', updateUserTimerSettings(userId, { focusDurationSeconds: seconds }));
     }
   };
 
@@ -50,7 +51,7 @@ export default function SettingsScreen() {
     const seconds = minutes * 60;
     setShortBreakDurationMinutes(minutes);
     if (userId) {
-      void updateUserTimerSettings(userId, { shortBreakDurationSeconds: seconds });
+      warnOnReject('Short break duration save', updateUserTimerSettings(userId, { shortBreakDurationSeconds: seconds }));
     }
   };
 
@@ -59,7 +60,7 @@ export default function SettingsScreen() {
     const seconds = minutes * 60;
     setLongBreakDurationMinutes(minutes);
     if (userId) {
-      void updateUserTimerSettings(userId, { longBreakDurationSeconds: seconds });
+      warnOnReject('Long break duration save', updateUserTimerSettings(userId, { longBreakDurationSeconds: seconds }));
     }
   };
 
@@ -76,7 +77,7 @@ export default function SettingsScreen() {
     const interval = Math.min(10, Math.max(1, numValue));
     setLongBreakInterval(interval);
     if (userId) {
-      void updateUserTimerSettings(userId, { longBreakInterval: interval });
+      warnOnReject('Long break interval save', updateUserTimerSettings(userId, { longBreakInterval: interval }));
     }
   };
 

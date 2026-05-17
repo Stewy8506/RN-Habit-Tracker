@@ -10,6 +10,7 @@ import { subscribeToDnd } from '@/services/dndService';
 import { listenToUserSettings, upsertUser } from '@/services/firestoreService';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
+import { warnOnReject } from '@/utils/promises';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -31,11 +32,14 @@ export default function RootLayout() {
       setUserId(user?.uid ?? null);
       setAuthLoading(false);
       if (user) {
-        void upsertUser(user.uid);
+        warnOnReject('User bootstrap', upsertUser(user.uid));
       }
     });
 
-    void ensureAnonymousAuth().catch(() => setAuthLoading(false));
+    ensureAnonymousAuth().catch((error) => {
+      console.warn('Anonymous auth failed', error);
+      setAuthLoading(false);
+    });
     const unsubscribeDnd = subscribeToDnd(setDndEnabled);
 
     return () => {
@@ -65,7 +69,7 @@ export default function RootLayout() {
           setLongBreakInterval(settings.longBreakInterval);
         }
       },
-      () => undefined,
+      (error) => console.warn('User settings listener failed', error),
     );
   }, [setFocusDurationSeconds, setShortBreakDurationSeconds, setLongBreakDurationSeconds, setLongBreakInterval, userId]);
 

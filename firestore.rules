@@ -52,6 +52,41 @@ service cloud.firestore {
             data.updatedAt is timestamp);
     }
 
+    function validUserSettingsUpdate() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+
+      return changed.hasOnly([
+          'focusDurationSeconds',
+          'shortBreakDurationSeconds',
+          'longBreakDurationSeconds',
+          'longBreakInterval',
+          'updatedAt'
+        ])
+
+        && (!changed.hasAny(['focusDurationSeconds']) ||
+            (request.resource.data.focusDurationSeconds is int &&
+             request.resource.data.focusDurationSeconds > 0 &&
+             request.resource.data.focusDurationSeconds <= 14400))
+
+        && (!changed.hasAny(['shortBreakDurationSeconds']) ||
+            (request.resource.data.shortBreakDurationSeconds is int &&
+             request.resource.data.shortBreakDurationSeconds > 0 &&
+             request.resource.data.shortBreakDurationSeconds <= 3600))
+
+        && (!changed.hasAny(['longBreakDurationSeconds']) ||
+            (request.resource.data.longBreakDurationSeconds is int &&
+             request.resource.data.longBreakDurationSeconds > 0 &&
+             request.resource.data.longBreakDurationSeconds <= 7200))
+
+        && (!changed.hasAny(['longBreakInterval']) ||
+            (request.resource.data.longBreakInterval is int &&
+             request.resource.data.longBreakInterval > 0 &&
+             request.resource.data.longBreakInterval <= 20))
+
+        && (!changed.hasAny(['updatedAt']) ||
+            request.resource.data.updatedAt is timestamp);
+    }
+
     // =========================
     // Task Validation
     // =========================
@@ -311,9 +346,13 @@ service cloud.firestore {
       allow read:
         if ownsUserPath(userId);
 
-      allow create, update:
+      allow create:
         if ownsUserPath(userId)
         && validUserSettings(request.resource.data);
+
+      allow update:
+        if ownsUserPath(userId)
+        && (validUserSettings(request.resource.data) || validUserSettingsUpdate());
 
       allow delete:
         if false;
