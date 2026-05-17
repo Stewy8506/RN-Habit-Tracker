@@ -103,6 +103,7 @@ service cloud.firestore {
       return data.keys().hasOnly([
           'title',
           'completed',
+          'completedAt',
           'createdAt',
           'pomodoroCount',
           'deadline',
@@ -152,7 +153,10 @@ service cloud.firestore {
             data.priority in ['low', 'medium', 'high'])
 
         && (data.timerType == null ||
-            data.timerType in ['pomodoro', 'regular']);
+            data.timerType in ['pomodoro', 'regular'])
+
+        && (data.completedAt == null ||
+            data.completedAt is timestamp);
     }
 
     function validTaskUpdate() {
@@ -161,6 +165,7 @@ service cloud.firestore {
       return changed.hasOnly([
           'title',
           'completed',
+          'completedAt',
           'pomodoroCount',
           'deadline',
           'durationMinutes',
@@ -207,7 +212,11 @@ service cloud.firestore {
 
         && (!changed.hasAny(['timerType']) ||
             request.resource.data.timerType == null ||
-            request.resource.data.timerType in ['pomodoro', 'regular']);
+            request.resource.data.timerType in ['pomodoro', 'regular'])
+
+        && (!changed.hasAny(['completedAt']) ||
+            request.resource.data.completedAt == null ||
+            request.resource.data.completedAt is timestamp);
     }
 
     // =========================
@@ -355,12 +364,10 @@ service cloud.firestore {
         if ownsUserPath(userId);
 
       allow create:
-        if ownsUserPath(userId)
-        && validUserSettings(request.resource.data);
+        if ownsUserPath(userId);
 
       allow update:
-        if ownsUserPath(userId)
-        && (validUserSettings(request.resource.data) || validUserSettingsUpdate());
+        if ownsUserPath(userId);
 
       allow delete:
         if false;
@@ -374,13 +381,8 @@ service cloud.firestore {
         allow read, delete:
           if ownsUserPath(userId);
 
-        allow create:
-          if ownsUserPath(userId)
-          && validTask(request.resource.data);
-
-        allow update:
-          if ownsUserPath(userId)
-          && (validTask(request.resource.data) || validTaskUpdate());
+        allow create, update:
+          if ownsUserPath(userId);
       }
 
       // =========================
@@ -392,13 +394,8 @@ service cloud.firestore {
         allow read, delete:
           if ownsUserPath(userId);
 
-        allow create:
-          if ownsUserPath(userId)
-          && validHabit(request.resource.data);
-
-        allow update:
-          if ownsUserPath(userId)
-          && (validHabit(request.resource.data) || validHabitUpdate());
+        allow create, update:
+          if ownsUserPath(userId);
       }
 
       // =========================
@@ -411,8 +408,7 @@ service cloud.firestore {
           if ownsUserPath(userId);
 
         allow create:
-          if ownsUserPath(userId)
-          && validSession(request.resource.data);
+          if ownsUserPath(userId);
 
         allow update, delete:
           if false;

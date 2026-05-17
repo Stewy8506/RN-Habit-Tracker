@@ -38,6 +38,8 @@ function sessionsCollection(userId: string) {
 }
 
 export async function upsertUser(userId: string) {
+  const { auth } = await import('@/config/firebase');
+  console.log('[Firestore] upsertUser called with userId:', userId, '| auth.currentUser?.uid:', auth.currentUser?.uid, '| isAnonymous:', auth.currentUser?.isAnonymous);
   await setDoc(userDoc(userId), { updatedAt: serverTimestamp() }, { merge: true });
 }
 

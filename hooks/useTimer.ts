@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
+import { useCallback, useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 
-import { disableDnd, enableDnd, scheduleAlarm, cancelAlarm } from '@/services/dndService';
+import { cancelAlarm, disableDnd, enableDnd, scheduleAlarm } from '@/services/dndService';
 import { completeHabit as completeHabitDoc, completeTask, updateTaskTimeSpent } from '@/services/firestoreService';
 import { saveCompletedFocusSession } from '@/services/timerService';
 import { useHabitStore } from '@/store/useHabitStore';
@@ -257,7 +257,7 @@ export function useTimer(onTaskCompleted?: () => void) {
 
     // Set the next mode and start automatically
     setMode(nextMode, nextDuration);
-    
+
     // Auto-start the next timer after a quick transition delay
     setTimeout(() => {
       void (async () => {
@@ -336,18 +336,29 @@ export function useTimer(onTaskCompleted?: () => void) {
     };
   }, []);
 
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
+    // Always clear any existing interval to prevent double-ticking
+    if (timerIntervalRef.current !== null) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
     if (!isRunning) {
       return;
     }
 
-    const intervalId = setInterval(() => {
+    timerIntervalRef.current = setInterval(() => {
       if (!useTimerStore.getState().isRunning) {
         return;
       }
       const currentSeconds = useTimerStore.getState().secondsLeft;
       if (currentSeconds <= 1) {
-        clearInterval(intervalId);
+        if (timerIntervalRef.current !== null) {
+          clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = null;
+        }
         void completeIntervalRef.current().catch((error) => {
           console.warn('Timer completion failed', error);
           useTimerStore.getState().setIsRunning(false);
@@ -358,7 +369,12 @@ export function useTimer(onTaskCompleted?: () => void) {
       useTimerStore.getState().setSecondsLeft(currentSeconds - 1);
     }, 1000);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      if (timerIntervalRef.current !== null) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
   }, [isRunning]);
 
   const start = async () => {

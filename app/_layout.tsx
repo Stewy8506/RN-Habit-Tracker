@@ -1,14 +1,14 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import 'react-native-reanimated';
-import * as Notifications from 'expo-notifications';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ensureAnonymousAuth, subscribeToAuth } from '@/services/authService';
-import { subscribeToDnd } from '@/services/dndService';
+import { getDndStatus, requestDndPolicyAccess, subscribeToDnd } from '@/services/dndService';
 import { listenToUserSettings, upsertUser } from '@/services/firestoreService';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
@@ -39,7 +39,7 @@ export default function RootLayout() {
       if (status !== 'granted') {
         await Notifications.requestPermissionsAsync();
       }
-      
+
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('alarm-channel', {
           name: 'Timer Alarm',
@@ -50,6 +50,11 @@ export default function RootLayout() {
           bypassDnd: true,
           lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
         });
+
+        // Prompt for DND access if not yet granted
+        if (!getDndStatus().policyAccessGranted) {
+          requestDndPolicyAccess();
+        }
       }
     })();
 
@@ -79,18 +84,25 @@ export default function RootLayout() {
   const setTriggerAlarmEnabled = useSettingsStore((state) => state.setTriggerAlarmEnabled);
 
   useEffect(() => {
+    let isFirstAuthEvent = true;
+
     const unsubscribeAuth = subscribeToAuth((user) => {
       setUserId(user?.uid ?? null);
       setAuthLoading(false);
+
       if (user) {
         warnOnReject('User bootstrap', upsertUser(user.uid));
+      } else if (isFirstAuthEvent) {
+        // No persisted session — create an anonymous user so the app
+        // can work immediately without requiring sign-in.
+        ensureAnonymousAuth().catch((error) => {
+          console.warn('Anonymous auth failed', error);
+        });
       }
+
+      isFirstAuthEvent = false;
     });
 
-    ensureAnonymousAuth().catch((error) => {
-      console.warn('Anonymous auth failed', error);
-      setAuthLoading(false);
-    });
     const unsubscribeDnd = subscribeToDnd(setDndEnabled);
 
     return () => {
