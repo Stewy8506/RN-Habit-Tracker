@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -235,6 +236,47 @@ export default function TodayScreen() {
     data: any;
   } | null>(null);
 
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.85)).current;
+
+  useEffect(() => {
+    if (longPressedItem) {
+      fadeAnim.setValue(0);
+      scaleAnim.setValue(0.85);
+
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 7.5,
+          tension: 45,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [longPressedItem]);
+
+  const closeMenu = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.85,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setLongPressedItem(null);
+    });
+  };
+
   const handleLongPressHabit = (habit: Habit) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLongPressedItem({ type: 'habit', id: habit.id, data: habit });
@@ -249,13 +291,26 @@ export default function TodayScreen() {
     if (!longPressedItem) return;
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     
-    if (longPressedItem.type === 'habit') {
-      await deleteHabit(longPressedItem.id);
-    } else {
-      await deleteTask(longPressedItem.id);
-    }
-    
-    setLongPressedItem(null);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.85,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(async () => {
+      const itemToDelete = longPressedItem;
+      setLongPressedItem(null);
+      if (itemToDelete.type === 'habit') {
+        await deleteHabit(itemToDelete.id);
+      } else {
+        await deleteTask(itemToDelete.id);
+      }
+    });
   };
   const {
     isRunning,
@@ -707,9 +762,15 @@ export default function TodayScreen() {
 
     {/* ── iMessage Style Context Menu Overlay ── */}
     {longPressedItem && (
-      <BlurView intensity={35} tint="dark" style={styles.blurOverlay}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={() => setLongPressedItem(null)} />
-        <View style={styles.contextMenuWrapper}>
+      <Animated.View style={[styles.blurOverlay, { opacity: fadeAnim }]}>
+        <BlurView
+          intensity={35}
+          tint="dark"
+          experimentalBlurMethod="dimezisBlurView"
+          style={StyleSheet.absoluteFill}
+        />
+        <Pressable style={StyleSheet.absoluteFill} onPress={closeMenu} />
+        <Animated.View style={[styles.contextMenuWrapper, { transform: [{ scale: scaleAnim }] }]}>
           <View style={styles.floatingPreviewCard}>
             {longPressedItem.type === 'habit' ? (
               <HabitRowPreview habit={longPressedItem.data} />
@@ -732,13 +793,13 @@ export default function TodayScreen() {
             
             <Pressable
               style={({ pressed }) => [styles.contextMenuItem, pressed && styles.contextMenuItemPressed]}
-              onPress={() => setLongPressedItem(null)}>
+              onPress={closeMenu}>
               <Ionicons name="close-circle-outline" size={18} color={TEXT} />
               <Text style={styles.contextMenuItemText}>Cancel</Text>
             </Pressable>
           </View>
-        </View>
-      </BlurView>
+        </Animated.View>
+      </Animated.View>
     )}
   </View>
   );
@@ -1087,7 +1148,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10000,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   contextMenuWrapper: {
     width: '90%',
