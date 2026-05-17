@@ -16,7 +16,7 @@ import { Button } from '@/components/common/Button';
 import { Modal } from '@/components/common/Modal';
 import { useHabits } from '@/hooks/useHabits';
 import { useTasks } from '@/hooks/useTasks';
-import { useTimer } from '@/hooks/useTimer';
+
 import { useTimerStore } from '@/store/useTimerStore';
 import { Habit, HabitPriority, HabitTimerType } from '@/types/habit';
 import { Task, TaskPriority, TaskTimerType } from '@/types/task';
@@ -224,7 +224,7 @@ export default function TodayScreen() {
     setSelectedTimerType,
     setSelectedTimerName,
     requestAutoStart,
-  } = useTimer();
+  } = useTimerStore();
   const setMode = useTimerStore((state) => state.setMode);
   const focusDurationSeconds = useTimerStore((state) => state.focusDurationSeconds);
 

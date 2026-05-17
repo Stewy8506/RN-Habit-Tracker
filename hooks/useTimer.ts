@@ -61,7 +61,6 @@ export function useTimer(onTaskCompleted?: () => void) {
     };
 
     const finishTimer = () => {
-      console.log('[useTimer] finishTimer called! Completed timer name:', selectedTimerName ?? 'Focus session');
       setCompletedTimerName(selectedTimerName ?? 'Focus session');
       setTimeout(() => {
         onTaskCompletedRef.current?.();
@@ -73,8 +72,6 @@ export function useTimer(onTaskCompleted?: () => void) {
     let nextDuration: number;
 
     setIsRunning(false);
-
-    console.log('[useTimer] completeInterval triggered. mode:', completedMode, 'selectedTaskId:', selectedTaskId);
 
     if (completedMode === 'focus') {
       const matchingTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : null;
@@ -107,14 +104,11 @@ export function useTimer(onTaskCompleted?: () => void) {
 
       // Handle task completion
       if (selectedTaskId && task) {
-        console.log('[useTimer] selectedTaskId & task exist. Task:', task);
         if (task.durationMinutes) {
           const durationSeconds = task.durationMinutes * 60;
           const timeSpent = (task.timeSpentSeconds || 0) + completedFocusSeconds;
-          console.log('[useTimer] Task duration (secs):', durationSeconds, 'timeSpent (secs):', timeSpent, 'completedFocusSeconds:', completedFocusSeconds);
 
           if (timeSpent >= durationSeconds) {
-            console.log('[useTimer] Task fully completed! timeSpent >= durationSeconds. Navigating...');
             await runSafely('DND disable', disableDnd);
             finishTimer();
             clearSelection();
@@ -133,7 +127,6 @@ export function useTimer(onTaskCompleted?: () => void) {
             }
             return;
           } else {
-            console.log('[useTimer] Task NOT fully completed. timeSpent < durationSeconds. Continuing progress...');
             await runSafely('DND disable', disableDnd);
             if (userId) {
               await runSafely('session save', () =>
