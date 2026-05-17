@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -68,10 +70,12 @@ function HabitRow({
   habit,
   onComplete,
   onOpenTimer,
+  onLongPress,
 }: {
   habit: Habit;
   onComplete: (h: Habit) => void;
   onOpenTimer?: (h: Habit) => void;
+  onLongPress?: (h: Habit) => void;
 }) {
   const today = new Date();
   const doneToday = habit.lastCompleted
@@ -93,9 +97,14 @@ function HabitRow({
   const timerLabel = habit.timerType ? habit.timerType.toUpperCase() : null;
 
   return (
-    <View style={[styles.habitRow, doneToday && styles.habitRowDone]}>
+    <Pressable
+      onLongPress={() => onLongPress?.(habit)}
+      delayLongPress={450}
+      style={[styles.habitRow, doneToday && styles.habitRowDone]}>
       <Pressable
         onPress={() => !doneToday && onComplete(habit)}
+        onLongPress={() => onLongPress?.(habit)}
+        delayLongPress={450}
         style={[styles.habitRowContent, doneToday && styles.habitRowDone]}>
         <View style={[styles.habitIcon, doneToday && styles.habitIconDone]}>
           <Ionicons
@@ -127,7 +136,7 @@ function HabitRow({
           />
         ))}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -136,10 +145,12 @@ function TaskRow({
   task,
   onToggle,
   onOpenTimer,
+  onLongPress,
 }: {
   task: Task;
   onToggle: (t: Task) => void;
   onOpenTimer?: (t: Task) => void;
+  onLongPress?: (t: Task) => void;
 }) {
   const duration = task.durationMinutes ?? (task.pomodoroCount > 0 ? task.pomodoroCount * 25 : null);
   const deadlineText = task.deadline
@@ -149,7 +160,10 @@ function TaskRow({
   const timerLabel = task.timerType ? task.timerType.toUpperCase() : null;
 
   return (
-    <View style={[styles.taskRow, task.completed && styles.taskRowDone]}>
+    <Pressable
+      onLongPress={() => onLongPress?.(task)}
+      delayLongPress={450}
+      style={[styles.taskRow, task.completed && styles.taskRowDone]}>
       <Pressable onPress={() => onToggle(task)} style={styles.taskCheckWrap}>
         <View style={[styles.taskCheck, task.completed && styles.taskCheckDone]}>
           {task.completed && <Ionicons name="checkmark" size={12} color={TEXT} />}
@@ -157,7 +171,9 @@ function TaskRow({
       </Pressable>
       <Pressable
         style={styles.taskContent}
-        onPress={() => onOpenTimer?.(task)}>
+        onPress={() => onOpenTimer?.(task)}
+        onLongPress={() => onLongPress?.(task)}
+        delayLongPress={450}>
         <View style={styles.taskHeader}>
           <Text
             style={[styles.taskTitle, task.completed && { color: MUTED, textDecorationLine: 'line-through' }]}
@@ -202,7 +218,7 @@ function TaskRow({
           ) : null}
         </View>
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 
@@ -210,8 +226,37 @@ function TaskRow({
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { habits, loading: habLoading, completeHabit, addHabit } = useHabits();
+  const { habits, loading: habLoading, completeHabit, addHabit, deleteHabit } = useHabits();
   const { tasks, loading: taskLoading, addTask, toggleTask, deleteTask } = useTasks();
+
+  const [longPressedItem, setLongPressedItem] = useState<{
+    type: 'task' | 'habit';
+    id: string;
+    data: any;
+  } | null>(null);
+
+  const handleLongPressHabit = (habit: Habit) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setLongPressedItem({ type: 'habit', id: habit.id, data: habit });
+  };
+
+  const handleLongPressTask = (task: Task) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setLongPressedItem({ type: 'task', id: task.id, data: task });
+  };
+
+  const handleMenuDelete = async () => {
+    if (!longPressedItem) return;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    if (longPressedItem.type === 'habit') {
+      await deleteHabit(longPressedItem.id);
+    } else {
+      await deleteTask(longPressedItem.id);
+    }
+    
+    setLongPressedItem(null);
+  };
   const {
     isRunning,
     mode,
@@ -365,6 +410,7 @@ export default function TodayScreen() {
   };
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={styles.root}
       contentContainerStyle={[styles.screen, { paddingTop: insets.top + 12 }]}
@@ -410,6 +456,7 @@ export default function TodayScreen() {
             habit={h}
             onComplete={completeHabit}
             onOpenTimer={openHabitTimer}
+            onLongPress={handleLongPressHabit}
           />
         ))
       )}
@@ -530,6 +577,7 @@ export default function TodayScreen() {
             task={t}
             onToggle={toggleTask}
             onOpenTimer={openTaskTimer}
+            onLongPress={handleLongPressTask}
           />
         ))
       )}
@@ -636,7 +684,11 @@ export default function TodayScreen() {
           <Text style={styles.emptyText}>No upcoming deadlines.</Text>
         ) : (
           upcomingTasks.map((t) => (
-            <View key={t.id} style={styles.upcomingRow}>
+            <Pressable
+              key={t.id}
+              onLongPress={() => handleLongPressTask(t)}
+              delayLongPress={450}
+              style={styles.upcomingRow}>
               <Text style={styles.upcomingTitle} numberOfLines={1}>
                 {t.title}
               </Text>
@@ -646,12 +698,136 @@ export default function TodayScreen() {
                   day: 'numeric',
                 })}
               </Text>
-            </View>
+            </Pressable>
           ))
         ))}
 
       <View style={{ height: 110 }} />
     </ScrollView>
+
+    {/* ── iMessage Style Context Menu Overlay ── */}
+    {longPressedItem && (
+      <BlurView intensity={35} tint="dark" style={styles.blurOverlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => setLongPressedItem(null)} />
+        <View style={styles.contextMenuWrapper}>
+          <View style={styles.floatingPreviewCard}>
+            {longPressedItem.type === 'habit' ? (
+              <HabitRowPreview habit={longPressedItem.data} />
+            ) : (
+              <TaskRowPreview task={longPressedItem.data} />
+            )}
+          </View>
+          
+          <View style={styles.contextMenu}>
+            <Pressable
+              style={({ pressed }) => [styles.contextMenuItem, pressed && styles.contextMenuItemPressed]}
+              onPress={handleMenuDelete}>
+              <Ionicons name="trash-outline" size={18} color="#FF453A" />
+              <Text style={styles.contextMenuItemTextDelete}>
+                Delete {longPressedItem.type === 'habit' ? 'Habit' : 'Task'}
+              </Text>
+            </Pressable>
+            
+            <View style={styles.contextMenuDivider} />
+            
+            <Pressable
+              style={({ pressed }) => [styles.contextMenuItem, pressed && styles.contextMenuItemPressed]}
+              onPress={() => setLongPressedItem(null)}>
+              <Ionicons name="close-circle-outline" size={18} color={TEXT} />
+              <Text style={styles.contextMenuItemText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </BlurView>
+    )}
+  </View>
+  );
+}
+
+// ── Preview Components for iMessage Context Menu ───────────────────────
+function HabitRowPreview({ habit }: { habit: Habit }) {
+  const today = new Date();
+  const doneToday = habit.lastCompleted ? isSameLocalDay(habit.lastCompleted.toDate(), today) : false;
+  const filledDots = Math.min(habit.streak, 7);
+  
+  const icons: Array<keyof typeof Ionicons.glyphMap> = [
+    'book-outline', 'pencil-outline', 'barbell-outline', 'heart-outline', 'musical-notes-outline', 'camera-outline', 'walk-outline'
+  ];
+  const iconIndex = habit.name.length % icons.length;
+  const iconName = (habit.icon as keyof typeof Ionicons.glyphMap) ?? icons[iconIndex];
+  const timerLabel = habit.timerType ? habit.timerType.toUpperCase() : null;
+
+  return (
+    <View style={[styles.habitRow, doneToday && styles.habitRowDone, { paddingHorizontal: 12 }]}>
+      <View style={styles.habitRowContent}>
+        <View style={[styles.habitIcon, doneToday && styles.habitIconDone]}>
+          <Ionicons name={doneToday ? 'checkmark' : iconName} size={16} color={doneToday ? TEXT : MUTED} />
+        </View>
+        <View style={styles.habitTextWrap}>
+          <Text style={[styles.habitName, doneToday && { color: MUTED }]}>{habit.name}</Text>
+          {habit.durationMinutes || timerLabel ? (
+            <Text style={styles.habitMeta}>
+              {habit.durationMinutes ? `${habit.durationMinutes} min · ` : ''}{timerLabel}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+      <View style={styles.dots}>
+        {Array.from({ length: 7 }).map((_, i) => (
+          <View key={i} style={[styles.dot, { backgroundColor: i < filledDots ? DOT_ON : DOT_OFF }]} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function TaskRowPreview({ task }: { task: Task }) {
+  const duration = task.durationMinutes ?? (task.pomodoroCount > 0 ? task.pomodoroCount * 25 : null);
+  const deadlineText = task.deadline ? task.deadline.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
+  const iconName = (task.icon as keyof typeof Ionicons.glyphMap) ?? 'stopwatch-outline';
+  const timerLabel = task.timerType ? task.timerType.toUpperCase() : null;
+
+  return (
+    <View style={[styles.taskRow, task.completed && styles.taskRowDone, { paddingHorizontal: 12, borderBottomWidth: 0 }]}>
+      <View style={[styles.taskCheck, task.completed && styles.taskCheckDone, { marginRight: 12 }]}>
+        {task.completed && <Ionicons name="checkmark" size={12} color={TEXT} />}
+      </View>
+      <View style={styles.taskContent}>
+        <View style={styles.taskHeader}>
+          <Text style={[styles.taskTitle, task.completed && { color: MUTED, textDecorationLine: 'line-through' }]} numberOfLines={2}>
+            {task.title}
+          </Text>
+          <View style={styles.taskIconBadge}>
+            <Ionicons name={iconName} size={14} color={TEXT} />
+          </View>
+        </View>
+        <View style={styles.taskMetaRow}>
+          {duration && (
+            <View style={styles.taskMeta}>
+              <Ionicons name="time-outline" size={11} color={MUTED} />
+              <Text style={styles.taskMetaText}>{duration} min</Text>
+            </View>
+          )}
+          {deadlineText && (
+            <View style={styles.taskMeta}>
+              <Ionicons name="calendar-outline" size={11} color={MUTED} />
+              <Text style={styles.taskMetaText}>{deadlineText}</Text>
+            </View>
+          )}
+          {timerLabel && (
+            <View style={styles.taskMeta}>
+              <Ionicons name="play-outline" size={11} color={MUTED} />
+              <Text style={styles.taskMetaText}>{timerLabel}</Text>
+            </View>
+          )}
+          {task.priority && (
+            <View style={[styles.priorityPill, task.priority === 'high' ? styles.priorityHigh : task.priority === 'medium' ? styles.priorityMedium : styles.priorityLow]}>
+              <Text style={styles.priorityText}>{task.priority}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -904,4 +1080,74 @@ const styles = StyleSheet.create({
   upcomingDate: { color: LABEL, fontSize: 10, fontWeight: '700', letterSpacing: 1.2 },
 
   emptyText: { color: MUTED, fontSize: 13, paddingVertical: 8, paddingHorizontal: 2 },
+
+  // iMessage Context Menu
+  blurOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10000,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  contextMenuWrapper: {
+    width: '90%',
+    maxWidth: 320,
+    alignSelf: 'center',
+    gap: 16,
+  },
+  floatingPreviewCard: {
+    backgroundColor: CARD,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 24,
+    width: '100%',
+    transform: [{ scale: 1.03 }],
+  },
+  contextMenu: {
+    backgroundColor: 'rgba(24, 24, 24, 0.85)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 16,
+  },
+  contextMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  contextMenuItemPressed: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  contextMenuItemTextText: {
+    color: TEXT,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  contextMenuItemTextDelete: {
+    color: '#FF453A',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  contextMenuItemText: {
+    color: TEXT,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  contextMenuDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
 });

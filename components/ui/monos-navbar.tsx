@@ -1,6 +1,6 @@
-import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
@@ -60,12 +60,12 @@ export function MonosNavbar({ state, descriptors, navigation }: BottomTabBarProp
         style={styles.gradient}
         pointerEvents="none"
       />
-      {Platform.OS === 'ios' && isLiquidGlassSupported ? (
+      {Platform.OS === 'ios' ? (
         <View style={[styles.safeArea, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <View style={styles.shadow}>
-            <LiquidGlassView interactive effect="clear" style={styles.pill}>
+            <BlurView intensity={30} tint="dark" style={styles.pill}>
               {bar}
-            </LiquidGlassView>
+            </BlurView>
           </View>
         </View>
       ) : (
