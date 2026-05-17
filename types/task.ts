@@ -9,6 +9,7 @@ export type Task = {
   title: string;
   completed: boolean;
   createdAt: Timestamp;
+  completedAt?: Timestamp | null;
   pomodoroCount: number;
   deadline: Timestamp | null;
   durationMinutes?: number | null;

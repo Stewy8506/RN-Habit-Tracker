@@ -54,26 +54,29 @@ export default function HomeScreen() {
   // Weekly bars: last 6 days as placeholder + today's real value
   const weekBars = [0.35, 0.5, 0.45, 0.65, 0.55, 0.7, consistencyScore / 100];
 
+  const tasksToday = completedTasks.filter((t) => {
+    if (!t.completedAt) {
+      return t.createdAt ? isSameLocalDay(t.createdAt.toDate(), today) : false;
+    }
+    return isSameLocalDay(t.completedAt.toDate(), today);
+  });
+
   const recentItems = [
     ...habitsToday.map((h) => ({
       id: h.id,
       label: h.name,
       icon: 'checkmark-circle' as const,
       tag: 'HABIT',
+      time: h.lastCompleted ? h.lastCompleted.toDate() : new Date(),
     })),
-    ...completedTasks.slice(0, 3).map((t) => ({
+    ...tasksToday.map((t) => ({
       id: t.id,
       label: t.title,
       icon: 'checkmark-circle' as const,
       tag: 'TASK',
+      time: t.completedAt ? t.completedAt.toDate() : (t.createdAt ? t.createdAt.toDate() : new Date()),
     })),
-    ...incompleteTasks.slice(0, 2).map((t) => ({
-      id: t.id,
-      label: t.title,
-      icon: 'ellipse-outline' as const,
-      tag: 'PENDING',
-    })),
-  ].slice(0, 5);
+  ].sort((a, b) => b.time.getTime() - a.time.getTime());
 
   const startFocus = () => {
     setSelectedTaskId(nextTask?.id ?? null);
@@ -232,20 +235,25 @@ export default function HomeScreen() {
         <>
           <SectionLabel>RECENT ACTIVITY</SectionLabel>
           <View style={styles.card}>
-            {recentItems.map((item, idx) => (
-              <View
-                key={item.id}
-                style={[
-                  styles.activityRow,
-                  idx < recentItems.length - 1 && styles.activityBorder,
-                ]}>
-                <Ionicons name={item.icon} size={18} color={item.icon === 'checkmark-circle' ? ACCENT : MUTED} />
-                <Text style={styles.activityLabel} numberOfLines={1}>
-                  {item.label}
-                </Text>
-                <Text style={styles.activityTag}>{item.tag}</Text>
-              </View>
-            ))}
+            <ScrollView
+              style={styles.scrollContainer}
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={true}>
+              {recentItems.map((item, idx) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.activityRow,
+                    idx < recentItems.length - 1 && styles.activityBorder,
+                  ]}>
+                  <Ionicons name={item.icon} size={18} color={ACCENT} />
+                  <Text style={styles.activityLabel} numberOfLines={1}>
+                    {item.label}
+                  </Text>
+                  <Text style={styles.activityTag}>{item.tag}</Text>
+                </View>
+              ))}
+            </ScrollView>
           </View>
         </>
       )}
@@ -393,6 +401,9 @@ const styles = StyleSheet.create({
   actionBtnText: { color: TEXT, fontSize: 13, fontWeight: '700' },
 
   // Recent activity
+  scrollContainer: {
+    maxHeight: 200,
+  },
   activityRow: {
     flexDirection: 'row',
     alignItems: 'center',

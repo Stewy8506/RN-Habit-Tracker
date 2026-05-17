@@ -131,6 +131,7 @@ export async function createTask(userId: string, input: CreateTaskInput) {
 export async function toggleTask(userId: string, task: Task) {
   await updateDoc(doc(tasksCollection(userId), task.id), {
     completed: !task.completed,
+    completedAt: !task.completed ? serverTimestamp() : null,
   });
 }
 
@@ -153,6 +154,7 @@ export async function updateTaskTimeSpent(userId: string, taskId: string, timeSp
 export async function completeTask(userId: string, taskId: string) {
   await updateDoc(doc(tasksCollection(userId), taskId), {
     completed: true,
+    completedAt: serverTimestamp(),
   });
 }
 
