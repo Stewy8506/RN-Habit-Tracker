@@ -23,6 +23,7 @@ export default function SettingsScreen() {
   const userId = useSettingsStore((state) => state.userId);
   const authLoading = useSettingsStore((state) => state.authLoading);
   const dndEnabled = useSettingsStore((state) => state.dndEnabled);
+  const triggerAlarmEnabled = useSettingsStore((state) => state.triggerAlarmEnabled);
   const focusDurationSeconds = useTimerStore((state) => state.focusDurationSeconds);
   const shortBreakDurationSeconds = useTimerStore((state) => state.shortBreakDurationSeconds);
   const longBreakDurationSeconds = useTimerStore((state) => state.longBreakDurationSeconds);
@@ -31,10 +32,18 @@ export default function SettingsScreen() {
   const setShortBreakDurationMinutes = useTimerStore((state) => state.setShortBreakDurationMinutes);
   const setLongBreakDurationMinutes = useTimerStore((state) => state.setLongBreakDurationMinutes);
   const setLongBreakInterval = useSettingsStore((state) => state.setLongBreakInterval);
+  const setTriggerAlarmEnabled = useSettingsStore((state) => state.setTriggerAlarmEnabled);
   const dndStatus = getDndStatus();
 
   const toggleDnd = (enabled: boolean) => {
     void (enabled ? enableDnd() : disableDnd());
+  };
+
+  const toggleTriggerAlarm = (enabled: boolean) => {
+    setTriggerAlarmEnabled(enabled);
+    if (userId) {
+      warnOnReject('Alarm setting save', updateUserTimerSettings(userId, { triggerAlarmEnabled: enabled }));
+    }
   };
 
   const updateFocusMinutes = (value: string) => {
@@ -113,6 +122,13 @@ export default function SettingsScreen() {
           variant="secondary"
           onPress={() => void requestDndPolicyAccess()}
         />
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={[styles.label, { color: colors.text }]}>Trigger alarm</Text>
+            <Text style={[styles.value, { color: colors.muted }]}>Play the phone alarm when a timer finishes.</Text>
+          </View>
+          <Switch value={triggerAlarmEnabled} onValueChange={toggleTriggerAlarm} />
+        </View>
       </Card>
 
       <Card style={styles.card}>

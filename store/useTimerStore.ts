@@ -4,6 +4,7 @@ import { FocusMode } from '@/types/session';
 import { FOCUS_DURATION_SECONDS } from '@/utils/constants';
 
 type TimerType = 'pomodoro' | 'regular';
+type TimerTargetType = 'task' | 'habit';
 
 type TimerState = {
   mode: FocusMode;
@@ -16,6 +17,7 @@ type TimerState = {
   isRunning: boolean;
   autoStartRequested: boolean;
   selectedTaskId: string | null;
+  selectedTimerTargetType: TimerTargetType | null;
   selectedTimerType: TimerType | null;
   selectedTimerName: string | null;
   setMode: (mode: FocusMode, secondsLeft: number) => void;
@@ -31,6 +33,7 @@ type TimerState = {
   requestAutoStart: () => void;
   consumeAutoStart: () => void;
   setSelectedTaskId: (taskId: string | null) => void;
+  setSelectedTimerTargetType: (targetType: TimerTargetType | null) => void;
   setSelectedTimerType: (timerType: TimerType | null) => void;
   setSelectedTimerName: (timerName: string | null) => void;
   reset: () => void;
@@ -47,6 +50,7 @@ export const useTimerStore = create<TimerState>((set) => ({
   isRunning: false,
   autoStartRequested: false,
   selectedTaskId: null,
+  selectedTimerTargetType: null,
   selectedTimerType: null,
   selectedTimerName: null,
   setMode: (mode, secondsLeft) => set({ mode, secondsLeft, currentDurationSeconds: secondsLeft }),
@@ -113,6 +117,7 @@ export const useTimerStore = create<TimerState>((set) => ({
   requestAutoStart: () => set({ autoStartRequested: true }),
   consumeAutoStart: () => set({ autoStartRequested: false }),
   setSelectedTaskId: (selectedTaskId) => set({ selectedTaskId }),
+  setSelectedTimerTargetType: (selectedTimerTargetType) => set({ selectedTimerTargetType }),
   setSelectedTimerType: (selectedTimerType) => set({ selectedTimerType }),
   setSelectedTimerName: (selectedTimerName) => set({ selectedTimerName }),
   reset: () =>
@@ -123,5 +128,6 @@ export const useTimerStore = create<TimerState>((set) => ({
       isRunning: false,
       autoStartRequested: false,
       completedPomodoros: 0,
+      selectedTimerTargetType: null,
     })),
 }));

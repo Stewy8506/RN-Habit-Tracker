@@ -26,6 +26,7 @@ export default function RootLayout() {
   const setShortBreakDurationSeconds = useTimerStore((state) => state.setShortBreakDurationSeconds);
   const setLongBreakDurationSeconds = useTimerStore((state) => state.setLongBreakDurationSeconds);
   const setLongBreakInterval = useSettingsStore((state) => state.setLongBreakInterval);
+  const setTriggerAlarmEnabled = useSettingsStore((state) => state.setTriggerAlarmEnabled);
 
   useEffect(() => {
     const unsubscribeAuth = subscribeToAuth((user) => {
@@ -68,10 +69,13 @@ export default function RootLayout() {
         if (settings.longBreakInterval) {
           setLongBreakInterval(settings.longBreakInterval);
         }
+        if (typeof settings.triggerAlarmEnabled === 'boolean') {
+          setTriggerAlarmEnabled(settings.triggerAlarmEnabled);
+        }
       },
       (error) => console.warn('User settings listener failed', error),
     );
-  }, [setFocusDurationSeconds, setShortBreakDurationSeconds, setLongBreakDurationSeconds, setLongBreakInterval, userId]);
+  }, [setFocusDurationSeconds, setShortBreakDurationSeconds, setLongBreakDurationSeconds, setLongBreakInterval, setTriggerAlarmEnabled, userId]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

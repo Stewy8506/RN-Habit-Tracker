@@ -220,6 +220,7 @@ export default function TodayScreen() {
     selectedTimerName,
     selectedTimerType,
     setSelectedTaskId,
+    setSelectedTimerTargetType,
     setSelectedTimerType,
     setSelectedTimerName,
     requestAutoStart,
@@ -275,6 +276,7 @@ export default function TodayScreen() {
 
   const openTaskTimer = (task: Task) => {
     setSelectedTaskId(task.id);
+    setSelectedTimerTargetType('task');
     setSelectedTimerName(task.title);
     setSelectedTimerType(task.timerType ?? 'regular');
     setMode('focus', getNextTaskFocusSeconds(task, focusDurationSeconds));
@@ -286,6 +288,7 @@ export default function TodayScreen() {
     const timerDuration = Math.min((habit.durationMinutes ?? focusDurationSeconds / 60) * 60, focusDurationSeconds);
 
     setSelectedTaskId(habit.id);
+    setSelectedTimerTargetType('habit');
     setSelectedTimerName(habit.name);
     setSelectedTimerType(habit.timerType ?? 'regular');
     setMode('focus', timerDuration);

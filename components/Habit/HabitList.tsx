@@ -10,6 +10,7 @@ type HabitListProps = {
   emptyText?: string;
   onComplete: (habit: Habit) => void;
   onDelete?: (habitId: string) => void;
+  onStartTimer?: (habit: Habit) => void;
 };
 
 export function HabitList({
@@ -18,6 +19,7 @@ export function HabitList({
   emptyText = 'No habits yet.',
   onComplete,
   onDelete,
+  onStartTimer,
 }: HabitListProps) {
   const colors = useColors();
 
@@ -32,7 +34,13 @@ export function HabitList({
   return (
     <View style={styles.list}>
       {habits.map((habit) => (
-        <HabitItem key={habit.id} habit={habit} onComplete={onComplete} onDelete={onDelete} />
+        <HabitItem
+          key={habit.id}
+          habit={habit}
+          onComplete={onComplete}
+          onDelete={onDelete}
+          onStartTimer={onStartTimer}
+        />
       ))}
     </View>
   );

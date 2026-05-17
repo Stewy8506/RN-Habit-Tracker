@@ -1,8 +1,10 @@
 import { useCallback, useEffect } from 'react';
 
+import { triggerTimerAlarm } from '@/services/alarmService';
 import { disableDnd, enableDnd } from '@/services/dndService';
-import { completeTask, updateTaskTimeSpent } from '@/services/firestoreService';
+import { completeHabit as completeHabitDoc, completeTask, updateTaskTimeSpent } from '@/services/firestoreService';
 import { saveCompletedFocusSession } from '@/services/timerService';
+import { useHabitStore } from '@/store/useHabitStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { useTimerStore } from '@/store/useTimerStore';
@@ -10,7 +12,9 @@ import { FocusMode } from '@/types/session';
 export function useTimer(onTaskCompleted?: () => void) {
   const userId = useSettingsStore((state) => state.userId);
   const longBreakInterval = useSettingsStore((state) => state.longBreakInterval);
+  const triggerAlarmEnabled = useSettingsStore((state) => state.triggerAlarmEnabled);
   const tasks = useTaskStore((state) => state.tasks);
+  const habits = useHabitStore((state) => state.habits);
   const mode = useTimerStore((state) => state.mode);
   const secondsLeft = useTimerStore((state) => state.secondsLeft);
   const currentDurationSeconds = useTimerStore((state) => state.currentDurationSeconds);
@@ -21,12 +25,14 @@ export function useTimer(onTaskCompleted?: () => void) {
   const isRunning = useTimerStore((state) => state.isRunning);
   const autoStartRequested = useTimerStore((state) => state.autoStartRequested);
   const selectedTaskId = useTimerStore((state) => state.selectedTaskId);
+  const selectedTimerTargetType = useTimerStore((state) => state.selectedTimerTargetType);
   const selectedTimerType = useTimerStore((state) => state.selectedTimerType);
   const selectedTimerName = useTimerStore((state) => state.selectedTimerName);
   const setMode = useTimerStore((state) => state.setMode);
   const setSecondsLeft = useTimerStore((state) => state.setSecondsLeft);
   const setIsRunning = useTimerStore((state) => state.setIsRunning);
   const setSelectedTaskId = useTimerStore((state) => state.setSelectedTaskId);
+  const setSelectedTimerTargetType = useTimerStore((state) => state.setSelectedTimerTargetType);
   const setSelectedTimerType = useTimerStore((state) => state.setSelectedTimerType);
   const setSelectedTimerName = useTimerStore((state) => state.setSelectedTimerName);
   const incrementCompletedPomodoros = useTimerStore((state) => state.incrementCompletedPomodoros);
@@ -43,6 +49,20 @@ export function useTimer(onTaskCompleted?: () => void) {
       }
     };
 
+    const clearSelection = () => {
+      setSelectedTaskId(null);
+      setSelectedTimerTargetType(null);
+      setSelectedTimerType(null);
+      setSelectedTimerName(null);
+    };
+
+    const finishTimer = async () => {
+      if (triggerAlarmEnabled) {
+        await runSafely('alarm trigger', triggerTimerAlarm);
+      }
+      onTaskCompleted?.();
+    };
+
     const completedMode = mode;
     let nextMode: FocusMode;
     let nextDuration: number;
@@ -50,7 +70,14 @@ export function useTimer(onTaskCompleted?: () => void) {
     setIsRunning(false);
 
     if (completedMode === 'focus') {
-      const task = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : null;
+      const task =
+        selectedTaskId && selectedTimerTargetType === 'task'
+          ? tasks.find(t => t.id === selectedTaskId)
+          : null;
+      const habit =
+        selectedTaskId && selectedTimerTargetType === 'habit'
+          ? habits.find(h => h.id === selectedTaskId)
+          : null;
       const completedFocusSeconds = currentDurationSeconds;
 
       // After focus, save deep-work session first.
@@ -59,6 +86,16 @@ export function useTimer(onTaskCompleted?: () => void) {
         await runSafely('session save', () =>
           saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, Boolean(task)),
         );
+      }
+
+      if (selectedTaskId && habit) {
+        if (userId) {
+          await runSafely('habit completion update', () => completeHabitDoc(userId, habit));
+        }
+        clearSelection();
+        setMode('focus', focusDurationSeconds);
+        await finishTimer();
+        return;
       }
 
       // Handle task completion
@@ -76,11 +113,9 @@ export function useTimer(onTaskCompleted?: () => void) {
             if (userId) {
               await runSafely('task completion update', () => completeTask(userId, selectedTaskId));
             }
-            setSelectedTaskId(null);
-            setSelectedTimerType(null);
-            setSelectedTimerName(null);
+            clearSelection();
             setMode('focus', focusDurationSeconds);
-            onTaskCompleted?.();
+            await finishTimer();
             return;
           } else {
             // Start another session for remaining time
@@ -101,7 +136,9 @@ export function useTimer(onTaskCompleted?: () => void) {
 
       if (selectedTimerType === 'regular') {
         // Regular mode ends after one deep focus block and does not auto-enter a break.
+        clearSelection();
         setMode('focus', focusDurationSeconds);
+        await finishTimer();
         return;
       }
 
@@ -135,9 +172,12 @@ export function useTimer(onTaskCompleted?: () => void) {
     longBreakDurationSeconds,
     longBreakInterval,
     mode,
+    habits,
     selectedTaskId,
+    selectedTimerTargetType,
     selectedTimerType,
     setSelectedTaskId,
+    setSelectedTimerTargetType,
     setIsRunning,
     setMode,
     setSelectedTimerName,
@@ -146,6 +186,7 @@ export function useTimer(onTaskCompleted?: () => void) {
     userId,
     incrementCompletedPomodoros,
     tasks,
+    triggerAlarmEnabled,
     onTaskCompleted,
   ]);
 
@@ -243,10 +284,12 @@ export function useTimer(onTaskCompleted?: () => void) {
     completedPomodoros,
     isRunning,
     selectedTaskId,
+    selectedTimerTargetType,
     selectedTimerType,
     selectedTimerName,
     autoStartRequested,
     setSelectedTaskId,
+    setSelectedTimerTargetType,
     setSelectedTimerType,
     setSelectedTimerName,
     requestAutoStart,

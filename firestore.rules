@@ -25,6 +25,7 @@ service cloud.firestore {
           'shortBreakDurationSeconds',
           'longBreakDurationSeconds',
           'longBreakInterval',
+          'triggerAlarmEnabled',
           'updatedAt'
         ])
 
@@ -48,6 +49,9 @@ service cloud.firestore {
              data.longBreakInterval > 0 &&
              data.longBreakInterval <= 20))
 
+        && (data.triggerAlarmEnabled == null ||
+            data.triggerAlarmEnabled is bool)
+
         && (data.updatedAt == null ||
             data.updatedAt is timestamp);
     }
@@ -60,6 +64,7 @@ service cloud.firestore {
           'shortBreakDurationSeconds',
           'longBreakDurationSeconds',
           'longBreakInterval',
+          'triggerAlarmEnabled',
           'updatedAt'
         ])
 
@@ -82,6 +87,9 @@ service cloud.firestore {
             (request.resource.data.longBreakInterval is int &&
              request.resource.data.longBreakInterval > 0 &&
              request.resource.data.longBreakInterval <= 20))
+
+        && (!changed.hasAny(['triggerAlarmEnabled']) ||
+            request.resource.data.triggerAlarmEnabled is bool)
 
         && (!changed.hasAny(['updatedAt']) ||
             request.resource.data.updatedAt is timestamp);

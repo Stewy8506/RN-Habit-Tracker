@@ -8,6 +8,8 @@ type DndControllerModule = {
   openPolicyAccessSettings: () => boolean;
   enableDnd: () => boolean;
   disableDnd: () => boolean;
+  triggerAlarm: () => boolean;
+  stopAlarm: () => boolean;
 };
 
 export type NativeDndStatus = {
@@ -65,4 +67,12 @@ export function enableNativeDnd() {
 
 export function disableNativeDnd() {
   return DndController?.disableDnd() === true;
+}
+
+export function triggerNativeAlarm() {
+  return DndController?.triggerAlarm() === true;
+}
+
+export function stopNativeAlarm() {
+  return DndController?.stopAlarm() === true;
 }

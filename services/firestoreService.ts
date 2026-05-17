@@ -48,6 +48,7 @@ export function listenToUserSettings(
     shortBreakDurationSeconds?: number;
     longBreakDurationSeconds?: number;
     longBreakInterval?: number;
+    triggerAlarmEnabled?: boolean;
   }) => void,
   onError: (error: Error) => void,
 ) {
@@ -64,6 +65,8 @@ export function listenToUserSettings(
           typeof data?.longBreakDurationSeconds === 'number' ? data.longBreakDurationSeconds : undefined,
         longBreakInterval:
           typeof data?.longBreakInterval === 'number' ? data.longBreakInterval : undefined,
+        triggerAlarmEnabled:
+          typeof data?.triggerAlarmEnabled === 'boolean' ? data.triggerAlarmEnabled : undefined,
       });
     },
     onError,
@@ -77,6 +80,7 @@ export async function updateUserTimerSettings(
     shortBreakDurationSeconds?: number;
     longBreakDurationSeconds?: number;
     longBreakInterval?: number;
+    triggerAlarmEnabled?: boolean;
   },
 ) {
   await setDoc(

@@ -6,11 +6,22 @@ import { Card } from '@/components/common/Card';
 import { HabitList } from '@/components/Habit/HabitList';
 import { useColors } from '@/hooks/use-colors';
 import { useHabits } from '@/hooks/useHabits';
+import { useTimerStore } from '@/store/useTimerStore';
+import { Habit } from '@/types/habit';
 import { compactTitle } from '@/utils/helpers';
+import { useRouter } from 'expo-router';
 
 export default function HabitsScreen() {
   const colors = useColors();
   const { habits, loading, error, addHabit, completeHabit, deleteHabit } = useHabits();
+  const router = useRouter();
+  const focusDurationSeconds = useTimerStore((state) => state.focusDurationSeconds);
+  const setSelectedTaskId = useTimerStore((state) => state.setSelectedTaskId);
+  const setSelectedTimerTargetType = useTimerStore((state) => state.setSelectedTimerTargetType);
+  const setSelectedTimerType = useTimerStore((state) => state.setSelectedTimerType);
+  const setSelectedTimerName = useTimerStore((state) => state.setSelectedTimerName);
+  const setMode = useTimerStore((state) => state.setMode);
+  const requestAutoStart = useTimerStore((state) => state.requestAutoStart);
   const [name, setName] = useState('');
 
   const submit = async () => {
@@ -21,6 +32,18 @@ export default function HabitsScreen() {
 
     await addHabit({ name: nextName });
     setName('');
+  };
+
+  const startHabitTimer = (habit: Habit) => {
+    const durationSeconds = Math.min((habit.durationMinutes ?? focusDurationSeconds / 60) * 60, focusDurationSeconds);
+
+    setSelectedTaskId(habit.id);
+    setSelectedTimerTargetType('habit');
+    setSelectedTimerType(habit.timerType ?? 'regular');
+    setSelectedTimerName(habit.name);
+    setMode('focus', durationSeconds);
+    requestAutoStart();
+    router.push('/focus');
   };
 
   return (
@@ -46,6 +69,7 @@ export default function HabitsScreen() {
           emptyText="Add one daily habit to begin tracking a streak."
           onComplete={completeHabit}
           onDelete={deleteHabit}
+          onStartTimer={startHabitTimer}
         />
       </Card>
     </ScrollView>

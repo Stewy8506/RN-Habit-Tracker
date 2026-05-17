@@ -14,6 +14,7 @@ export default function TasksScreen() {
   const { tasks, loading, error, addTask, toggleTask, deleteTask } = useTasks();
   const router = useRouter();
   const setSelectedTaskId = useTimerStore((state) => state.setSelectedTaskId);
+  const setSelectedTimerTargetType = useTimerStore((state) => state.setSelectedTimerTargetType);
   const setSelectedTimerType = useTimerStore((state) => state.setSelectedTimerType);
   const setSelectedTimerName = useTimerStore((state) => state.setSelectedTimerName);
   const setMode = useTimerStore((state) => state.setMode);
@@ -27,6 +28,7 @@ export default function TasksScreen() {
     const timerDuration = getNextTaskFocusSeconds(task, focusDurationSeconds);
 
     setSelectedTaskId(taskId);
+    setSelectedTimerTargetType('task');
     setSelectedTimerType('regular');
     setSelectedTimerName(task.title);
     setMode('focus', timerDuration);

@@ -67,7 +67,7 @@ export default function FocusScreen() {
     reset,
     stop,
     skip,
-  } = useTimer(() => router.push('/(tabs)/tasks'));
+  } = useTimer(() => router.replace('/today' as any));
 
   const setFocusDurationSeconds = useTimerStore((s) => s.setFocusDurationSeconds);
   const setShortBreakDurationSeconds = useTimerStore((s) => s.setShortBreakDurationSeconds);

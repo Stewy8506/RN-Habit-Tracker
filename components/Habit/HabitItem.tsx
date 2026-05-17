@@ -8,9 +8,10 @@ type HabitItemProps = {
   habit: Habit;
   onComplete: (habit: Habit) => void;
   onDelete?: (habitId: string) => void;
+  onStartTimer?: (habit: Habit) => void;
 };
 
-export function HabitItem({ habit, onComplete, onDelete }: HabitItemProps) {
+export function HabitItem({ habit, onComplete, onDelete, onStartTimer }: HabitItemProps) {
   const colors = useColors();
   const completedToday = habit.lastCompleted
     ? isSameLocalDay(habit.lastCompleted.toDate(), new Date())
@@ -32,8 +33,15 @@ export function HabitItem({ habit, onComplete, onDelete }: HabitItemProps) {
       </Pressable>
       <View style={styles.content}>
         <Text style={[styles.name, { color: colors.text }]}>{habit.name}</Text>
-        <Text style={[styles.meta, { color: colors.muted }]}>{habit.streak} day streak</Text>
+        <Text style={[styles.meta, { color: colors.muted }]}>
+          {habit.streak} day streak{habit.durationMinutes ? ` · ${habit.durationMinutes} min` : ''}
+        </Text>
       </View>
+      {onStartTimer ? (
+        <Pressable onPress={() => onStartTimer(habit)} hitSlop={12}>
+          <Text style={[styles.timer, { color: colors.primary }]}>Start</Text>
+        </Pressable>
+      ) : null}
       {onDelete ? (
         <Pressable onPress={() => onDelete(habit.id)} hitSlop={12}>
           <Text style={[styles.delete, { color: colors.danger }]}>Delete</Text>
@@ -77,5 +85,8 @@ const styles = StyleSheet.create({
   },
   delete: {
     fontWeight: '700',
+  },
+  timer: {
+    fontWeight: '800',
   },
 });

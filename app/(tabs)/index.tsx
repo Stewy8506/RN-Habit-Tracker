@@ -28,6 +28,7 @@ export default function HomeScreen() {
   const { habits, loading: habitsLoading, completeHabit } = useHabits();
   const authLoading = useSettingsStore((s) => s.authLoading);
   const setSelectedTaskId = useTimerStore((s) => s.setSelectedTaskId);
+  const setSelectedTimerTargetType = useTimerStore((s) => s.setSelectedTimerTargetType);
   const setSelectedTimerType = useTimerStore((s) => s.setSelectedTimerType);
   const setSelectedTimerName = useTimerStore((s) => s.setSelectedTimerName);
   const setMode = useTimerStore((s) => s.setMode);
@@ -76,6 +77,7 @@ export default function HomeScreen() {
 
   const startFocus = () => {
     setSelectedTaskId(nextTask?.id ?? null);
+    setSelectedTimerTargetType(nextTask ? 'task' : null);
     setSelectedTimerType(nextTask?.timerType ?? 'regular');
     setSelectedTimerName(nextTask?.title ?? null);
     if (nextTask) {
