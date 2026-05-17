@@ -10,6 +10,8 @@ type DndControllerModule = {
   disableDnd: () => boolean;
   triggerAlarm: () => boolean;
   stopAlarm: () => boolean;
+  scheduleAlarm: (seconds: number) => boolean;
+  cancelAlarm: () => boolean;
 };
 
 export type NativeDndStatus = {
@@ -75,4 +77,12 @@ export function triggerNativeAlarm() {
 
 export function stopNativeAlarm() {
   return DndController?.stopAlarm() === true;
+}
+
+export function scheduleNativeAlarm(seconds: number) {
+  return DndController?.scheduleAlarm(seconds) === true;
+}
+
+export function cancelNativeAlarm() {
+  return DndController?.cancelAlarm() === true;
 }

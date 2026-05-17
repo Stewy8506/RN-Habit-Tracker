@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { AppState, AppStateStatus } from 'react-native';
 
-import { disableDnd, enableDnd } from '@/services/dndService';
+import { disableDnd, enableDnd, scheduleAlarm, cancelAlarm } from '@/services/dndService';
 import { completeHabit as completeHabitDoc, completeTask, updateTaskTimeSpent } from '@/services/firestoreService';
 import { saveCompletedFocusSession } from '@/services/timerService';
 import { useHabitStore } from '@/store/useHabitStore';
@@ -16,6 +16,8 @@ const ONGOING_NOTIFICATION_ID = 'ongoing-timer-notification';
 const scheduleTimerNotification = async (secondsLeft: number, timerName: string | null) => {
   await Notifications.cancelAllScheduledNotificationsAsync();
   if (secondsLeft <= 0) return;
+
+  scheduleAlarm(secondsLeft);
 
   await Notifications.scheduleNotificationAsync({
     content: {
@@ -57,6 +59,7 @@ const dismissOngoingTimerNotification = async () => {
 const cancelTimerNotifications = async () => {
   await Notifications.cancelAllScheduledNotificationsAsync();
   await Notifications.dismissNotificationAsync(ONGOING_NOTIFICATION_ID);
+  cancelAlarm();
 };
 
 export function useTimer(onTaskCompleted?: () => void) {

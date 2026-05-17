@@ -5,6 +5,8 @@ import {
   hasDndPolicyAccess,
   isNativeDndAvailable,
   openDndPolicyAccessSettings,
+  scheduleNativeAlarm,
+  cancelNativeAlarm,
 } from '@/modules/dnd-controller/src';
 
 type DndListener = (enabled: boolean) => void;
@@ -56,4 +58,16 @@ export function subscribeToDnd(listener: DndListener) {
   listeners.add(listener);
   listener(enabled);
   return () => listeners.delete(listener);
+}
+
+export function scheduleAlarm(seconds: number) {
+  if (isNativeDndAvailable()) {
+    scheduleNativeAlarm(seconds);
+  }
+}
+
+export function cancelAlarm() {
+  if (isNativeDndAvailable()) {
+    cancelNativeAlarm();
+  }
 }

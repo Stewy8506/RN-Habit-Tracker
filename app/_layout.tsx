@@ -54,9 +54,13 @@ export default function RootLayout() {
     })();
 
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      // Tap notification -> push to alarm page
+      const identifier = response.notification.request.identifier;
       setTimeout(() => {
-        router.push('/alarm' as any);
+        if (identifier === 'ongoing-timer-notification') {
+          router.push('/focus' as any);
+        } else {
+          router.push('/alarm' as any);
+        }
       }, 0);
     });
 

@@ -1,22 +1,17 @@
 package expo.modules.dndcontroller
 
+import android.app.AlarmManager
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.media.AudioAttributes
-import android.media.Ringtone
-import android.media.RingtoneManager
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class DndControllerModule : Module() {
   private var lastError: String? = null
-  private var alarmRingtone: Ringtone? = null
-  private val mainHandler = Handler(Looper.getMainLooper())
 
   private val notificationManager: NotificationManager?
     get() = appContext.reactContext?.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
@@ -25,7 +20,6 @@ class DndControllerModule : Module() {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || manager == null) {
       return NotificationManager.INTERRUPTION_FILTER_UNKNOWN
     }
-
     return manager.currentInterruptionFilter
   }
 
@@ -42,19 +36,7 @@ class DndControllerModule : Module() {
         NotificationManager.Policy.SUPPRESSED_EFFECT_AMBIENT or
         NotificationManager.Policy.SUPPRESSED_EFFECT_NOTIFICATION_LIST
     )
-
     manager.setNotificationPolicy(policy)
-  }
-
-  private fun stopAlarmPlaybackInternal() {
-    alarmRingtone?.stop()
-    alarmRingtone = null
-  }
-
-  private fun stopAlarmPlayback() {
-    mainHandler.post {
-      stopAlarmPlaybackInternal()
-    }
   }
 
   override fun definition() = ModuleDefinition {
@@ -149,39 +131,56 @@ class DndControllerModule : Module() {
         lastError = "React context is unavailable."
         return@Function false
       }
+      AlarmReceiver.startAlarm(context)
+      true
+    }
+
+    Function("stopAlarm") {
+      AlarmReceiver.stopAlarm()
+      true
+    }
+
+    Function("scheduleAlarm") { seconds: Int ->
+      val context = appContext.reactContext ?: run {
+        lastError = "React context is unavailable."
+        return@Function false
+      }
+
+      val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: run {
+        lastError = "AlarmManager is unavailable."
+        return@Function false
+      }
+
+      val intent = Intent(context, AlarmReceiver::class.java)
+      val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        4242,
+        intent,
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+          PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+          PendingIntent.FLAG_UPDATE_CURRENT
+        }
+      )
+
+      // Cancel any existing alarm first
+      alarmManager.cancel(pendingIntent)
 
       try {
-        val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-          ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-          ?: run {
-            lastError = "No alarm URI is available."
-            return@Function false
-          }
-        val ringtone = RingtoneManager.getRingtone(context, alarmUri) ?: run {
-          lastError = "No alarm ringtone is available."
-          return@Function false
+        val triggerTime = System.currentTimeMillis() + seconds * 1000L
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+          alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerTime,
+            pendingIntent
+          )
+        } else {
+          alarmManager.setExact(
+            AlarmManager.RTC_WAKEUP,
+            triggerTime,
+            pendingIntent
+          )
         }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-          ringtone.audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ALARM)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build()
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-          ringtone.isLooping = true
-        }
-
-        mainHandler.post {
-          try {
-            stopAlarmPlaybackInternal()
-            alarmRingtone = ringtone
-            ringtone.play()
-          } catch (e: Throwable) {
-            lastError = e.message ?: e.javaClass.simpleName
-          }
-        }
-        mainHandler.postDelayed({ stopAlarmPlayback() }, 60000)
         lastError = null
         true
       } catch (error: Throwable) {
@@ -190,15 +189,32 @@ class DndControllerModule : Module() {
       }
     }
 
-    Function("stopAlarm") {
-      try {
-        stopAlarmPlayback()
-        lastError = null
-        true
-      } catch (error: Throwable) {
-        lastError = error.message ?: error.javaClass.simpleName
-        false
+    Function("cancelAlarm") {
+      val context = appContext.reactContext ?: run {
+        lastError = "React context is unavailable."
+        return@Function false
       }
+
+      val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: run {
+        lastError = "AlarmManager is unavailable."
+        return@Function false
+      }
+
+      val intent = Intent(context, AlarmReceiver::class.java)
+      val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        4242,
+        intent,
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+          PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+          PendingIntent.FLAG_UPDATE_CURRENT
+        }
+      )
+
+      alarmManager.cancel(pendingIntent)
+      AlarmReceiver.stopAlarm()
+      true
     }
   }
 }
