@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -211,8 +211,8 @@ function TaskRow({
                 task.priority === 'high'
                   ? styles.priorityHigh
                   : task.priority === 'medium'
-                  ? styles.priorityMedium
-                  : styles.priorityLow,
+                    ? styles.priorityMedium
+                    : styles.priorityLow,
               ]}>
               <Text style={styles.priorityText}>{task.priority}</Text>
             </View>
@@ -290,7 +290,7 @@ export default function TodayScreen() {
   const handleMenuDelete = async () => {
     if (!longPressedItem) return;
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -466,342 +466,342 @@ export default function TodayScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={[styles.screen, { paddingTop: insets.top + 12 }]}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled">
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable style={styles.headerBtn} hitSlop={8}>
-          <Ionicons name="menu" size={22} color={TEXT} />
-        </Pressable>
-        <Text style={styles.appName}>MONOS</Text>
-        <Pressable style={styles.headerBtn} hitSlop={8}>
-          <Ionicons name="settings-outline" size={20} color={TEXT} />
-        </Pressable>
-      </View>
+      <ScrollView
+        style={styles.root}
+        contentContainerStyle={[styles.screen, { paddingTop: insets.top + 12 }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
+        {/* Header */}
+        <View style={styles.header}>
+          <Pressable style={styles.headerBtn} hitSlop={8}>
+            <Ionicons name="menu" size={22} color={TEXT} />
+          </Pressable>
+          <Text style={styles.appName}>MONOS</Text>
+          <Pressable style={styles.headerBtn} hitSlop={8}>
+            <Ionicons name="settings-outline" size={20} color={TEXT} />
+          </Pressable>
+        </View>
 
-      {isRunning && selectedTimerName ? (
-        <Pressable style={styles.activeTimerCard} onPress={() => router.push('/focus')}>
-          <Text style={styles.activeTimerLabel}>Active timer</Text>
-          <View style={styles.activeTimerRow}>
-            <Text style={styles.activeTimerName}>{selectedTimerName}</Text>
-            <Text style={styles.activeTimerTime}>
-              {formatTimerLabel(secondsLeft)} · {selectedTimerType?.toUpperCase()}
-            </Text>
-          </View>
-        </Pressable>
-      ) : null}
-
-      {/* ── CONSISTENCY ─────────────────────────── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>CONSISTENCY</Text>
-        <View style={styles.divider} />
-      </View>
-
-      {habLoading ? (
-        <ActivityIndicator color={ACCENT} />
-      ) : habits.length === 0 ? (
-        <Text style={styles.emptyText}>No habits yet.</Text>
-      ) : (
-        habits.map((h) => (
-          <HabitRow
-            key={h.id}
-            habit={h}
-            onComplete={completeHabit}
-            onOpenTimer={openHabitTimer}
-            onLongPress={handleLongPressHabit}
-          />
-        ))
-      )}
-
-      <Pressable style={styles.addRow} onPress={() => setShowAddHabit(true)}>
-        <Ionicons name="add" size={16} color={MUTED} />
-        <Text style={styles.addLabel}>ADD HABIT</Text>
-      </Pressable>
-
-      <Modal visible={showAddHabit} onClose={() => setShowAddHabit(false)}>
-        <Text style={styles.modalHeading}>New habit</Text>
-        <TextInput
-          placeholder="Habit name"
-          placeholderTextColor={MUTED}
-          value={habitForm.name}
-          onChangeText={(value) => setHabitForm((prev) => ({ ...prev, name: value }))}
-          style={[styles.modalInput, { color: TEXT }]}
-          autoFocus
-          returnKeyType="done"
-          onSubmitEditing={submitHabit}
-        />
-        <Text style={styles.modalLabel}>Suggested habits</Text>
-        <View style={styles.suggestionRow}>
-          {HABIT_PRESETS.map((preset) => (
-            <Pressable
-              key={preset.name}
-              style={[
-                styles.presetButton,
-                habitForm.name === preset.name && styles.presetButtonActive,
-              ]}
-              onPress={() =>
-                setHabitForm((prev) => ({
-                  ...prev,
-                  name: preset.name,
-                  icon: preset.icon as HabitIcon,
-                  category: preset.name,
-                }))
-              }>
-              <Text
-                style={[
-                  styles.presetText,
-                  habitForm.name === preset.name && styles.presetTextActive,
-                ]}>
-                {preset.name}
+        {isRunning && selectedTimerName ? (
+          <Pressable style={styles.activeTimerCard} onPress={() => router.push('/focus')}>
+            <Text style={styles.activeTimerLabel}>Active timer</Text>
+            <View style={styles.activeTimerRow}>
+              <Text style={styles.activeTimerName}>{selectedTimerName}</Text>
+              <Text style={styles.activeTimerTime}>
+                {formatTimerLabel(secondsLeft)} · {selectedTimerType?.toUpperCase()}
               </Text>
-            </Pressable>
-          ))}
+            </View>
+          </Pressable>
+        ) : null}
+
+        {/* ── CONSISTENCY ─────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>CONSISTENCY</Text>
+          <View style={styles.divider} />
         </View>
-        <Text style={styles.modalLabel}>Icon</Text>
-        <View style={styles.iconRow}>
-          {HABIT_ICON_OPTIONS.map((icon) => (
-            <Pressable
-              key={icon}
-              style={[
-                styles.iconOption,
-                habitForm.icon === icon && styles.iconOptionSelected,
-              ]}
-              onPress={() => setHabitForm((prev) => ({ ...prev, icon }))}>
-              <Ionicons name={icon} size={20} color={habitForm.icon === icon ? TEXT : MUTED} />
-            </Pressable>
-          ))}
-        </View>
-        <Text style={styles.modalLabel}>Priority</Text>
-        <View style={styles.priorityRow}>
-          {PRIORITY_OPTIONS.map((option) => (
-            <Pressable
-              key={option}
-              style={[
-                styles.priorityButton,
-                habitForm.priority === option && styles.priorityButtonSelected,
-              ]}
-              onPress={() => setHabitForm((prev) => ({ ...prev, priority: option }))}>
-              <Text
-                style={[
-                  styles.priorityButtonText,
-                  habitForm.priority === option && styles.priorityButtonTextSelected,
-                ]}>
-                {option}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <View style={styles.modalActions}>
-          <Button
-            title="Cancel"
-            variant="secondary"
-            onPress={() => {
-              resetHabitForm();
-              setShowAddHabit(false);
-            }}
-          />
-          <Button
-            title="Add habit"
-            onPress={submitHabit}
-            disabled={!compactTitle(habitForm.name)}
-          />
-        </View>
-      </Modal>
 
-      <View style={{ height: 18 }} />
-
-      {/* ── PRIORITY ────────────────────────────── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>PRIORITY</Text>
-        <Text style={styles.remainingCount}>
-          {priorityTasks.length} REMAINING
-        </Text>
-      </View>
-
-      {taskLoading ? (
-        <ActivityIndicator color={ACCENT} />
-      ) : priorityTasks.length === 0 ? (
-        <Text style={styles.emptyText}>All tasks done. 🎉</Text>
-      ) : (
-        priorityTasks.map((t) => (
-          <TaskRow
-            key={t.id}
-            task={t}
-            onToggle={toggleTask}
-            onOpenTimer={openTaskTimer}
-            onLongPress={handleLongPressTask}
-          />
-        ))
-      )}
-
-      <Pressable style={styles.addRow} onPress={() => setShowAddTask(true)}>
-        <Ionicons name="add" size={16} color={MUTED} />
-        <Text style={styles.addLabel}>ADD TASK</Text>
-      </Pressable>
-
-      <Modal visible={showAddTask} onClose={() => setShowAddTask(false)}>
-        <Text style={styles.modalHeading}>New task</Text>
-        <TextInput
-          placeholder="Task name"
-          placeholderTextColor={MUTED}
-          value={taskForm.title}
-          onChangeText={(value) => setTaskForm((prev) => ({ ...prev, title: value }))}
-          style={[styles.modalInput, { color: TEXT }]}
-          autoFocus
-          returnKeyType="done"
-          onSubmitEditing={submitTask}
-        />
-        <Text style={styles.modalLabel}>Duration (minutes)</Text>
-        <TextInput
-          placeholder="25"
-          placeholderTextColor={MUTED}
-          value={taskForm.duration}
-          onChangeText={(value) => setTaskForm((prev) => ({ ...prev, duration: value }))}
-          keyboardType="number-pad"
-          style={[styles.modalInput, { color: TEXT }]}
-        />
-        <Text style={styles.modalLabel}>Icon</Text>
-        <View style={styles.iconRow}>
-          {TASK_ICON_OPTIONS.map((icon) => (
-            <Pressable
-              key={icon}
-              style={[
-                styles.iconOption,
-                taskForm.icon === icon && styles.iconOptionSelected,
-              ]}
-              onPress={() => setTaskForm((prev) => ({ ...prev, icon }))}>
-              <Ionicons name={icon} size={20} color={taskForm.icon === icon ? TEXT : MUTED} />
-            </Pressable>
-          ))}
-        </View>
-        <Text style={styles.modalLabel}>Deadline</Text>
-        <TextInput
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor={MUTED}
-          value={taskForm.deadline}
-          onChangeText={(value) => setTaskForm((prev) => ({ ...prev, deadline: value }))}
-          style={[styles.modalInput, { color: TEXT }]}
-        />
-        <Text style={styles.modalLabel}>Priority</Text>
-        <View style={styles.priorityRow}>
-          {PRIORITY_OPTIONS.map((option) => (
-            <Pressable
-              key={option}
-              style={[
-                styles.priorityButton,
-                taskForm.priority === option && styles.priorityButtonSelected,
-              ]}
-              onPress={() => setTaskForm((prev) => ({ ...prev, priority: option }))}>
-              <Text
-                style={[
-                  styles.priorityButtonText,
-                  taskForm.priority === option && styles.priorityButtonTextSelected,
-                ]}>
-                {option}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <View style={styles.modalActions}>
-          <Button
-            title="Cancel"
-            variant="secondary"
-            onPress={() => {
-              resetTaskForm();
-              setShowAddTask(false);
-            }}
-          />
-          <Button
-            title="Add task"
-            onPress={submitTask}
-            disabled={!compactTitle(taskForm.title)}
-          />
-        </View>
-      </Modal>
-
-      <View style={{ height: 18 }} />
-
-      {/* ── UPCOMING (collapsible) ───────────────── */}
-      <Pressable style={styles.section} onPress={() => setUpcomingOpen((o) => !o)}>
-        <Ionicons
-          name={upcomingOpen ? 'chevron-down' : 'chevron-forward'}
-          size={12}
-          color={LABEL}
-        />
-        <Text style={styles.sectionLabel}>UPCOMING</Text>
-      </Pressable>
-
-      {upcomingOpen &&
-        (upcomingTasks.length === 0 ? (
-          <Text style={styles.emptyText}>No upcoming deadlines.</Text>
+        {habLoading ? (
+          <ActivityIndicator color={ACCENT} />
+        ) : habits.length === 0 ? (
+          <Text style={styles.emptyText}>No habits yet.</Text>
         ) : (
-          upcomingTasks.map((t) => (
-            <Pressable
-              key={t.id}
-              onLongPress={() => handleLongPressTask(t)}
-              delayLongPress={450}
-              style={styles.upcomingRow}>
-              <Text style={styles.upcomingTitle} numberOfLines={1}>
-                {t.title}
-              </Text>
-              <Text style={styles.upcomingDate}>
-                {t.deadline!.toDate().toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </Text>
-            </Pressable>
+          habits.map((h) => (
+            <HabitRow
+              key={h.id}
+              habit={h}
+              onComplete={completeHabit}
+              onOpenTimer={openHabitTimer}
+              onLongPress={handleLongPressHabit}
+            />
           ))
-        ))}
+        )}
 
-      <View style={{ height: 110 }} />
-    </ScrollView>
+        <Pressable style={styles.addRow} onPress={() => setShowAddHabit(true)}>
+          <Ionicons name="add" size={16} color={MUTED} />
+          <Text style={styles.addLabel}>ADD HABIT</Text>
+        </Pressable>
 
-    {/* ── iMessage Style Context Menu Overlay ── */}
-    {longPressedItem && (
-      <Animated.View style={[styles.blurOverlay, { opacity: fadeAnim }]}>
-        <BlurView
-          intensity={35}
-          tint="dark"
-          experimentalBlurMethod="dimezisBlurView"
-          style={StyleSheet.absoluteFill}
-        />
-        <Pressable style={StyleSheet.absoluteFill} onPress={closeMenu} />
-        <Animated.View style={[styles.contextMenuWrapper, { transform: [{ scale: scaleAnim }] }]}>
-          <View style={styles.floatingPreviewCard}>
-            {longPressedItem.type === 'habit' ? (
-              <HabitRowPreview habit={longPressedItem.data} />
-            ) : (
-              <TaskRowPreview task={longPressedItem.data} />
-            )}
+        <Modal visible={showAddHabit} onClose={() => setShowAddHabit(false)}>
+          <Text style={styles.modalHeading}>New habit</Text>
+          <TextInput
+            placeholder="Habit name"
+            placeholderTextColor={MUTED}
+            value={habitForm.name}
+            onChangeText={(value) => setHabitForm((prev) => ({ ...prev, name: value }))}
+            style={[styles.modalInput, { color: TEXT }]}
+            autoFocus
+            returnKeyType="done"
+            onSubmitEditing={submitHabit}
+          />
+          <Text style={styles.modalLabel}>Suggested habits</Text>
+          <View style={styles.suggestionRow}>
+            {HABIT_PRESETS.map((preset) => (
+              <Pressable
+                key={preset.name}
+                style={[
+                  styles.presetButton,
+                  habitForm.name === preset.name && styles.presetButtonActive,
+                ]}
+                onPress={() =>
+                  setHabitForm((prev) => ({
+                    ...prev,
+                    name: preset.name,
+                    icon: preset.icon as HabitIcon,
+                    category: preset.name,
+                  }))
+                }>
+                <Text
+                  style={[
+                    styles.presetText,
+                    habitForm.name === preset.name && styles.presetTextActive,
+                  ]}>
+                  {preset.name}
+                </Text>
+              </Pressable>
+            ))}
           </View>
-          
-          <View style={styles.contextMenu}>
-            <Pressable
-              style={({ pressed }) => [styles.contextMenuItem, pressed && styles.contextMenuItemPressed]}
-              onPress={handleMenuDelete}>
-              <Ionicons name="trash-outline" size={18} color="#FF453A" />
-              <Text style={styles.contextMenuItemTextDelete}>
-                Delete {longPressedItem.type === 'habit' ? 'Habit' : 'Task'}
-              </Text>
-            </Pressable>
-            
-            <View style={styles.contextMenuDivider} />
-            
-            <Pressable
-              style={({ pressed }) => [styles.contextMenuItem, pressed && styles.contextMenuItemPressed]}
-              onPress={closeMenu}>
-              <Ionicons name="close-circle-outline" size={18} color={TEXT} />
-              <Text style={styles.contextMenuItemText}>Cancel</Text>
-            </Pressable>
+          <Text style={styles.modalLabel}>Icon</Text>
+          <View style={styles.iconRow}>
+            {HABIT_ICON_OPTIONS.map((icon) => (
+              <Pressable
+                key={icon}
+                style={[
+                  styles.iconOption,
+                  habitForm.icon === icon && styles.iconOptionSelected,
+                ]}
+                onPress={() => setHabitForm((prev) => ({ ...prev, icon }))}>
+                <Ionicons name={icon} size={20} color={habitForm.icon === icon ? TEXT : MUTED} />
+              </Pressable>
+            ))}
           </View>
+          <Text style={styles.modalLabel}>Priority</Text>
+          <View style={styles.priorityRow}>
+            {PRIORITY_OPTIONS.map((option) => (
+              <Pressable
+                key={option}
+                style={[
+                  styles.priorityButton,
+                  habitForm.priority === option && styles.priorityButtonSelected,
+                ]}
+                onPress={() => setHabitForm((prev) => ({ ...prev, priority: option }))}>
+                <Text
+                  style={[
+                    styles.priorityButtonText,
+                    habitForm.priority === option && styles.priorityButtonTextSelected,
+                  ]}>
+                  {option}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.modalActions}>
+            <Button
+              title="Cancel"
+              variant="secondary"
+              onPress={() => {
+                resetHabitForm();
+                setShowAddHabit(false);
+              }}
+            />
+            <Button
+              title="Add habit"
+              onPress={submitHabit}
+              disabled={!compactTitle(habitForm.name)}
+            />
+          </View>
+        </Modal>
+
+        <View style={{ height: 18 }} />
+
+        {/* ── PRIORITY ────────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>PRIORITY</Text>
+          <Text style={styles.remainingCount}>
+            {priorityTasks.length} REMAINING
+          </Text>
+        </View>
+
+        {taskLoading ? (
+          <ActivityIndicator color={ACCENT} />
+        ) : priorityTasks.length === 0 ? (
+          <Text style={styles.emptyText}>All tasks done. 🎉</Text>
+        ) : (
+          priorityTasks.map((t) => (
+            <TaskRow
+              key={t.id}
+              task={t}
+              onToggle={toggleTask}
+              onOpenTimer={openTaskTimer}
+              onLongPress={handleLongPressTask}
+            />
+          ))
+        )}
+
+        <Pressable style={styles.addRow} onPress={() => setShowAddTask(true)}>
+          <Ionicons name="add" size={16} color={MUTED} />
+          <Text style={styles.addLabel}>ADD TASK</Text>
+        </Pressable>
+
+        <Modal visible={showAddTask} onClose={() => setShowAddTask(false)}>
+          <Text style={styles.modalHeading}>New task</Text>
+          <TextInput
+            placeholder="Task name"
+            placeholderTextColor={MUTED}
+            value={taskForm.title}
+            onChangeText={(value) => setTaskForm((prev) => ({ ...prev, title: value }))}
+            style={[styles.modalInput, { color: TEXT }]}
+            autoFocus
+            returnKeyType="done"
+            onSubmitEditing={submitTask}
+          />
+          <Text style={styles.modalLabel}>Duration (minutes)</Text>
+          <TextInput
+            placeholder="25"
+            placeholderTextColor={MUTED}
+            value={taskForm.duration}
+            onChangeText={(value) => setTaskForm((prev) => ({ ...prev, duration: value }))}
+            keyboardType="number-pad"
+            style={[styles.modalInput, { color: TEXT }]}
+          />
+          <Text style={styles.modalLabel}>Icon</Text>
+          <View style={styles.iconRow}>
+            {TASK_ICON_OPTIONS.map((icon) => (
+              <Pressable
+                key={icon}
+                style={[
+                  styles.iconOption,
+                  taskForm.icon === icon && styles.iconOptionSelected,
+                ]}
+                onPress={() => setTaskForm((prev) => ({ ...prev, icon }))}>
+                <Ionicons name={icon} size={20} color={taskForm.icon === icon ? TEXT : MUTED} />
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.modalLabel}>Deadline</Text>
+          <TextInput
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={MUTED}
+            value={taskForm.deadline}
+            onChangeText={(value) => setTaskForm((prev) => ({ ...prev, deadline: value }))}
+            style={[styles.modalInput, { color: TEXT }]}
+          />
+          <Text style={styles.modalLabel}>Priority</Text>
+          <View style={styles.priorityRow}>
+            {PRIORITY_OPTIONS.map((option) => (
+              <Pressable
+                key={option}
+                style={[
+                  styles.priorityButton,
+                  taskForm.priority === option && styles.priorityButtonSelected,
+                ]}
+                onPress={() => setTaskForm((prev) => ({ ...prev, priority: option }))}>
+                <Text
+                  style={[
+                    styles.priorityButtonText,
+                    taskForm.priority === option && styles.priorityButtonTextSelected,
+                  ]}>
+                  {option}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.modalActions}>
+            <Button
+              title="Cancel"
+              variant="secondary"
+              onPress={() => {
+                resetTaskForm();
+                setShowAddTask(false);
+              }}
+            />
+            <Button
+              title="Add task"
+              onPress={submitTask}
+              disabled={!compactTitle(taskForm.title)}
+            />
+          </View>
+        </Modal>
+
+        <View style={{ height: 18 }} />
+
+        {/* ── UPCOMING (collapsible) ───────────────── */}
+        <Pressable style={styles.section} onPress={() => setUpcomingOpen((o) => !o)}>
+          <Ionicons
+            name={upcomingOpen ? 'chevron-down' : 'chevron-forward'}
+            size={12}
+            color={LABEL}
+          />
+          <Text style={styles.sectionLabel}>UPCOMING</Text>
+        </Pressable>
+
+        {upcomingOpen &&
+          (upcomingTasks.length === 0 ? (
+            <Text style={styles.emptyText}>No upcoming deadlines.</Text>
+          ) : (
+            upcomingTasks.map((t) => (
+              <Pressable
+                key={t.id}
+                onLongPress={() => handleLongPressTask(t)}
+                delayLongPress={450}
+                style={styles.upcomingRow}>
+                <Text style={styles.upcomingTitle} numberOfLines={1}>
+                  {t.title}
+                </Text>
+                <Text style={styles.upcomingDate}>
+                  {t.deadline!.toDate().toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </Text>
+              </Pressable>
+            ))
+          ))}
+
+        <View style={{ height: 110 }} />
+      </ScrollView>
+
+      {/* ── iMessage Style Context Menu Overlay ── */}
+      {longPressedItem && (
+        <Animated.View style={[styles.blurOverlay, { opacity: fadeAnim }]}>
+          <BlurView
+            intensity={25}
+            tint="dark"
+            experimentalBlurMethod="dimezisBlurView"
+            style={StyleSheet.absoluteFill}
+          />
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeMenu} />
+          <Animated.View style={[styles.contextMenuWrapper, { transform: [{ scale: scaleAnim }] }]}>
+            <View style={styles.floatingPreviewCard}>
+              {longPressedItem.type === 'habit' ? (
+                <HabitRowPreview habit={longPressedItem.data} />
+              ) : (
+                <TaskRowPreview task={longPressedItem.data} />
+              )}
+            </View>
+
+            <View style={styles.contextMenu}>
+              <Pressable
+                style={({ pressed }) => [styles.contextMenuItem, pressed && styles.contextMenuItemPressed]}
+                onPress={handleMenuDelete}>
+                <Ionicons name="trash-outline" size={18} color="#FF453A" />
+                <Text style={styles.contextMenuItemTextDelete}>
+                  Delete {longPressedItem.type === 'habit' ? 'Habit' : 'Task'}
+                </Text>
+              </Pressable>
+
+              <View style={styles.contextMenuDivider} />
+
+              <Pressable
+                style={({ pressed }) => [styles.contextMenuItem, pressed && styles.contextMenuItemPressed]}
+                onPress={closeMenu}>
+                <Ionicons name="close-circle-outline" size={18} color={TEXT} />
+                <Text style={styles.contextMenuItemText}>Cancel</Text>
+              </Pressable>
+            </View>
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
-    )}
-  </View>
+      )}
+    </View>
   );
 }
 
@@ -810,7 +810,7 @@ function HabitRowPreview({ habit }: { habit: Habit }) {
   const today = new Date();
   const doneToday = habit.lastCompleted ? isSameLocalDay(habit.lastCompleted.toDate(), today) : false;
   const filledDots = Math.min(habit.streak, 7);
-  
+
   const icons: Array<keyof typeof Ionicons.glyphMap> = [
     'book-outline', 'pencil-outline', 'barbell-outline', 'heart-outline', 'musical-notes-outline', 'camera-outline', 'walk-outline'
   ];
@@ -1148,7 +1148,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10000,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   contextMenuWrapper: {
     width: '90%',

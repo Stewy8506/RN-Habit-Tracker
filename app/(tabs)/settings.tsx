@@ -1,8 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
+import { auth } from '@/config/firebase';
 import { useColors } from '@/hooks/use-colors';
+import { signInWithGoogle } from '@/services/authService';
 import { disableDnd, enableDnd, getDndStatus, requestDndPolicyAccess } from '@/services/dndService';
 import { updateUserTimerSettings } from '@/services/firestoreService';
 import { useSettingsStore } from '@/store/useSettingsStore';
@@ -34,6 +38,19 @@ export default function SettingsScreen() {
   const setLongBreakInterval = useSettingsStore((state) => state.setLongBreakInterval);
   const setTriggerAlarmEnabled = useSettingsStore((state) => state.setTriggerAlarmEnabled);
   const dndStatus = getDndStatus();
+
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.warn('Google connection failed:', error);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const toggleDnd = (enabled: boolean) => {
     void (enabled ? enableDnd() : disableDnd());
@@ -74,9 +91,8 @@ export default function SettingsScreen() {
   };
 
   const updateLongBreakInterval = (value: string) => {
-    // Allow empty string for better UX while typing
     if (value === '') {
-      setLongBreakInterval(1); // Temporary value while typing
+      setLongBreakInterval(1);
       return;
     }
     
@@ -98,12 +114,44 @@ export default function SettingsScreen() {
     >
       <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
       <Card style={styles.card}>
-        <View style={styles.row}>
-          <View style={styles.rowText}>
+        <View style={[styles.row, { alignItems: 'center' }]}>
+          <View style={[styles.rowText, { gap: 4 }]}>
             <Text style={[styles.label, { color: colors.text }]}>Account status</Text>
-            <Text style={[styles.value, { color: colors.muted }]}>{authLoading ? 'Signing in...' : userId ?? 'Unavailable'}</Text>
+            {authLoading ? (
+              <Text style={[styles.value, { color: colors.muted }]}>Signing in...</Text>
+            ) : auth.currentUser ? (
+              <View style={styles.accountContainer}>
+                <View style={styles.badgeRow}>
+                  <View style={[styles.badge, auth.currentUser.isAnonymous ? styles.guestBadge : styles.googleBadge]}>
+                    <Ionicons 
+                      name={auth.currentUser.isAnonymous ? "person-outline" : "logo-google"} 
+                      size={10} 
+                      color="#FFFFFF" 
+                    />
+                    <Text style={styles.badgeText}>
+                      {auth.currentUser.isAnonymous ? 'GUEST' : 'GOOGLE'}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.value, { color: colors.muted }]} numberOfLines={1}>
+                  {auth.currentUser.isAnonymous ? `ID: ${userId?.slice(0, 12)}...` : auth.currentUser.email}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.value, { color: colors.muted }]}>Unavailable</Text>
+            )}
           </View>
+          {auth.currentUser?.isAnonymous && (
+            <Button
+              title={googleLoading ? "Connecting..." : "Connect Google"}
+              variant="secondary"
+              disabled={googleLoading}
+              onPress={handleGoogleLogin}
+              style={{ minHeight: 38, height: 38, paddingHorizontal: 12, justifyContent: 'center' }}
+            />
+          )}
         </View>
+
         <View style={styles.row}>
           <View style={styles.rowText}>
             <Text style={[styles.label, { color: colors.text }]}>Focus DND</Text>
@@ -265,5 +313,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     textAlign: 'center',
     width: 76,
+  },
+  // Account Status Styles
+  accountContainer: {
+    gap: 4,
+    marginTop: 2,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    gap: 4,
+  },
+  guestBadge: {
+    backgroundColor: '#8E8E93',
+  },
+  googleBadge: {
+    backgroundColor: '#34C759',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
 });

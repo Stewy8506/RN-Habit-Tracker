@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.dasan.productivityapp",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.ACCESS_NOTIFICATION_POLICY",
         "android.permission.SCHEDULE_EXACT_ALARM",
@@ -45,7 +46,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true,
