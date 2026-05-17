@@ -1,6 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, Easing } from 'react-native-reanimated';
 
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
@@ -23,6 +26,21 @@ function clampMinutes(value: string) {
 }
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
+  const transition = useSharedValue(0);
+
+  useEffect(() => {
+    transition.value = withTiming(isFocused ? 1 : 0, {
+      duration: 160,
+      easing: Easing.out(Easing.quad),
+    });
+  }, [isFocused]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: transition.value,
+    transform: [{ scale: 0.985 + 0.015 * transition.value }],
+  }));
   const colors = useColors();
   const userId = useSettingsStore((state) => state.userId);
   const authLoading = useSettingsStore((state) => state.authLoading);
@@ -107,8 +125,9 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView 
-      contentContainerStyle={[styles.screen, { backgroundColor: colors.background }]}
+    <Animated.View style={[{ flex: 1, backgroundColor: colors.background }, animatedStyle]}>
+      <ScrollView 
+      contentContainerStyle={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top + 60 + 12 }]}
       showsVerticalScrollIndicator={true}
       keyboardShouldPersistTaps="handled"
     >
@@ -254,7 +273,8 @@ export default function SettingsScreen() {
           />
         </View>
       </Card>
-    </ScrollView>
+      </ScrollView>
+    </Animated.View>
   );
 }
 

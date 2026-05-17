@@ -1,8 +1,10 @@
+import { useSettingsStore } from '@/store/useSettingsStore';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,13 +18,23 @@ const ROUTE_ICONS: Record<string, { idle: RouteIconName; active: RouteIconName }
 
 export function MonosNavbar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-
   const visibleRoutes = state.routes.filter((route) => {
     const opts = descriptors[route.key]?.options as any;
     return opts?.href !== null && opts?.href !== undefined
       ? false
       : ROUTE_ICONS[route.name] !== undefined;
   });
+
+  const setActiveTabIndex = useSettingsStore((s) => s.setActiveTabIndex);
+
+  useEffect(() => {
+    // Find the active route index in visibleRoutes to keep indices 0, 1, 2 aligned
+    const activeRouteName = state.routes[state.index]?.name;
+    const visibleIndex = visibleRoutes.findIndex(r => r.name === activeRouteName);
+    if (visibleIndex !== -1) {
+      setActiveTabIndex(visibleIndex);
+    }
+  }, [state.index, visibleRoutes]);
 
   const items = visibleRoutes.map((route) => {
     const focused = state.routes[state.index]?.key === route.key;

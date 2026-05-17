@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { ActivityIndicator, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 
 import { useHabits } from '@/hooks/useHabits';
 import { useTasks } from '@/hooks/useTasks';
@@ -24,6 +27,21 @@ function SectionLabel({ children }: { children: string }) {
 }
 
 export default function HomeScreen() {
+  const isFocused = useIsFocused();
+  const transition = useSharedValue(0);
+
+  React.useEffect(() => {
+    transition.value = withTiming(isFocused ? 1 : 0, {
+      duration: 160,
+      easing: Easing.out(Easing.quad),
+    });
+  }, [isFocused]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: transition.value,
+    transform: [{ scale: 0.985 + 0.015 * transition.value }],
+  }));
+
   const { tasks, loading: tasksLoading } = useTasks();
   const { habits, loading: habitsLoading, completeHabit } = useHabits();
   const authLoading = useSettingsStore((s) => s.authLoading);
@@ -93,23 +111,11 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={[styles.screen, { paddingTop: insets.top + 12 }]}
-      showsVerticalScrollIndicator={false}>
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <Pressable style={styles.headerBtn} hitSlop={8}>
-          <Ionicons name="menu" size={22} color={TEXT} />
-        </Pressable>
-        <Text style={styles.appName}>MONOS</Text>
-        <Pressable
-          style={styles.headerBtn}
-          hitSlop={8}
-          onPress={() => router.push('/(tabs)/settings')}>
-          <Ionicons name="settings-outline" size={20} color={TEXT} />
-        </Pressable>
-      </View>
+    <Animated.View style={[{ flex: 1, backgroundColor: BG }, animatedStyle]}>
+      <ScrollView
+        style={styles.root}
+        contentContainerStyle={[styles.screen, { paddingTop: insets.top + 60 + 12 }]}
+        showsVerticalScrollIndicator={false}>
 
       {/* ── Consistency Card ── */}
       <View style={styles.card}>
@@ -259,7 +265,8 @@ export default function HomeScreen() {
       )}
 
       <View style={{ height: 110 }} />
-    </ScrollView>
+      </ScrollView>
+    </Animated.View>
   );
 }
 

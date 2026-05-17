@@ -51,7 +51,6 @@ export async function signInWithGoogle() {
     if (currentUser?.isAnonymous) {
       try {
         const linked = await linkWithCredential(currentUser, googleCredential);
-        console.log('[Google Auth] Successfully linked Google to anonymous account. UID preserved:', linked.user.uid);
         return linked.user;
       } catch (linkError: any) {
         // credential-already-in-use means this Google account is already

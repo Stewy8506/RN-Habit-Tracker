@@ -39,14 +39,13 @@ function sessionsCollection(userId: string) {
 
 export async function upsertUser(userId: string) {
   const { auth } = await import('@/config/firebase');
-  console.log('[Firestore] upsertUser called with userId:', userId, '| auth.currentUser?.uid:', auth.currentUser?.uid, '| isAnonymous:', auth.currentUser?.isAnonymous);
   await setDoc(userDoc(userId), { updatedAt: serverTimestamp() }, { merge: true });
 }
 
 export function listenToUserSettings(
   userId: string,
-  onNext: (settings: { 
-    focusDurationSeconds?: number; 
+  onNext: (settings: {
+    focusDurationSeconds?: number;
     shortBreakDurationSeconds?: number;
     longBreakDurationSeconds?: number;
     longBreakInterval?: number;
@@ -77,8 +76,8 @@ export function listenToUserSettings(
 
 export async function updateUserTimerSettings(
   userId: string,
-  settings: { 
-    focusDurationSeconds?: number; 
+  settings: {
+    focusDurationSeconds?: number;
     shortBreakDurationSeconds?: number;
     longBreakDurationSeconds?: number;
     longBreakInterval?: number;

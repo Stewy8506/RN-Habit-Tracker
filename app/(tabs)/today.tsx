@@ -14,6 +14,8 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
+import AnimatedReanimated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, Easing } from 'react-native-reanimated';
 
 import { Button } from '@/components/common/Button';
 import { Modal } from '@/components/common/Modal';
@@ -223,8 +225,25 @@ function TaskRow({
   );
 }
 
+
+
 // ── Main screen ───────────────────────────────────────────────────────
 export default function TodayScreen() {
+  const isFocused = useIsFocused();
+  const transition = useSharedValue(0);
+
+  useEffect(() => {
+    transition.value = withTiming(isFocused ? 1 : 0, {
+      duration: 160,
+      easing: Easing.out(Easing.quad),
+    });
+  }, [isFocused]);
+
+  const animatedScreenStyle = useAnimatedStyle(() => ({
+    opacity: transition.value,
+    transform: [{ scale: 0.985 + 0.015 * transition.value }],
+  }));
+
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { habits, loading: habLoading, completeHabit, addHabit, deleteHabit } = useHabits();
@@ -465,22 +484,12 @@ export default function TodayScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <AnimatedReanimated.View style={[{ flex: 1, backgroundColor: BG }, animatedScreenStyle]}>
       <ScrollView
         style={styles.root}
-        contentContainerStyle={[styles.screen, { paddingTop: insets.top + 12 }]}
+        contentContainerStyle={[styles.screen, { paddingTop: insets.top + 60 + 12 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable style={styles.headerBtn} hitSlop={8}>
-            <Ionicons name="menu" size={22} color={TEXT} />
-          </Pressable>
-          <Text style={styles.appName}>MONOS</Text>
-          <Pressable style={styles.headerBtn} hitSlop={8}>
-            <Ionicons name="settings-outline" size={20} color={TEXT} />
-          </Pressable>
-        </View>
 
         {isRunning && selectedTimerName ? (
           <Pressable style={styles.activeTimerCard} onPress={() => router.push('/focus')}>
@@ -801,7 +810,7 @@ export default function TodayScreen() {
           </Animated.View>
         </Animated.View>
       )}
-    </View>
+    </AnimatedReanimated.View>
   );
 }
 
