@@ -17,9 +17,11 @@ import { Modal } from '@/components/common/Modal';
 import { useHabits } from '@/hooks/useHabits';
 import { useTasks } from '@/hooks/useTasks';
 import { useTimer } from '@/hooks/useTimer';
+import { useTimerStore } from '@/store/useTimerStore';
 import { Habit, HabitPriority, HabitTimerType } from '@/types/habit';
 import { Task, TaskPriority, TaskTimerType } from '@/types/task';
 import { compactTitle } from '@/utils/helpers';
+import { getNextTaskFocusSeconds } from '@/utils/taskTimer';
 import { isSameLocalDay } from '@/utils/time';
 
 const BG = '#0A0A0A';
@@ -155,7 +157,7 @@ function TaskRow({
       </Pressable>
       <Pressable
         style={styles.taskContent}
-        onPress={() => task.timerType && onOpenTimer?.(task)}>
+        onPress={() => onOpenTimer?.(task)}>
         <View style={styles.taskHeader}>
           <Text
             style={[styles.taskTitle, task.completed && { color: MUTED, textDecorationLine: 'line-through' }]}
@@ -220,7 +222,10 @@ export default function TodayScreen() {
     setSelectedTaskId,
     setSelectedTimerType,
     setSelectedTimerName,
+    requestAutoStart,
   } = useTimer();
+  const setMode = useTimerStore((state) => state.setMode);
+  const focusDurationSeconds = useTimerStore((state) => state.focusDurationSeconds);
 
   const [showAddTask, setShowAddTask] = useState(false);
   const [showAddHabit, setShowAddHabit] = useState(false);
@@ -268,12 +273,23 @@ export default function TodayScreen() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const openTimer = (id: string, name: string, timerType: TaskTimerType | HabitTimerType | null | undefined) => {
-    setSelectedTaskId(id);
-    setSelectedTimerName(name);
-    if (timerType) {
-      setSelectedTimerType(timerType);
-    }
+  const openTaskTimer = (task: Task) => {
+    setSelectedTaskId(task.id);
+    setSelectedTimerName(task.title);
+    setSelectedTimerType(task.timerType ?? 'regular');
+    setMode('focus', getNextTaskFocusSeconds(task, focusDurationSeconds));
+    requestAutoStart();
+    router.push('/focus');
+  };
+
+  const openHabitTimer = (habit: Habit) => {
+    const timerDuration = Math.min((habit.durationMinutes ?? focusDurationSeconds / 60) * 60, focusDurationSeconds);
+
+    setSelectedTaskId(habit.id);
+    setSelectedTimerName(habit.name);
+    setSelectedTimerType(habit.timerType ?? 'regular');
+    setMode('focus', timerDuration);
+    requestAutoStart();
     router.push('/focus');
   };
 
@@ -390,7 +406,7 @@ export default function TodayScreen() {
             key={h.id}
             habit={h}
             onComplete={completeHabit}
-            onOpenTimer={(habit) => openTimer(habit.id, habit.name, habit.timerType)}
+            onOpenTimer={openHabitTimer}
           />
         ))
       )}
@@ -510,7 +526,7 @@ export default function TodayScreen() {
             key={t.id}
             task={t}
             onToggle={toggleTask}
-            onOpenTimer={(task) => openTimer(task.id, task.title, task.timerType)}
+            onOpenTimer={openTaskTimer}
           />
         ))
       )}

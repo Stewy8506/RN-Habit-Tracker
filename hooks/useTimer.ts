@@ -13,11 +13,13 @@ export function useTimer(onTaskCompleted?: () => void) {
   const tasks = useTaskStore((state) => state.tasks);
   const mode = useTimerStore((state) => state.mode);
   const secondsLeft = useTimerStore((state) => state.secondsLeft);
+  const currentDurationSeconds = useTimerStore((state) => state.currentDurationSeconds);
   const focusDurationSeconds = useTimerStore((state) => state.focusDurationSeconds);
   const shortBreakDurationSeconds = useTimerStore((state) => state.shortBreakDurationSeconds);
   const longBreakDurationSeconds = useTimerStore((state) => state.longBreakDurationSeconds);
   const completedPomodoros = useTimerStore((state) => state.completedPomodoros);
   const isRunning = useTimerStore((state) => state.isRunning);
+  const autoStartRequested = useTimerStore((state) => state.autoStartRequested);
   const selectedTaskId = useTimerStore((state) => state.selectedTaskId);
   const selectedTimerType = useTimerStore((state) => state.selectedTimerType);
   const selectedTimerName = useTimerStore((state) => state.selectedTimerName);
@@ -28,38 +30,55 @@ export function useTimer(onTaskCompleted?: () => void) {
   const setSelectedTimerType = useTimerStore((state) => state.setSelectedTimerType);
   const setSelectedTimerName = useTimerStore((state) => state.setSelectedTimerName);
   const incrementCompletedPomodoros = useTimerStore((state) => state.incrementCompletedPomodoros);
+  const requestAutoStart = useTimerStore((state) => state.requestAutoStart);
+  const consumeAutoStart = useTimerStore((state) => state.consumeAutoStart);
   const resetStore = useTimerStore((state) => state.reset);
 
   const completeInterval = useCallback(async () => {
+    const runSafely = async (label: string, action: () => Promise<unknown>) => {
+      try {
+        await action();
+      } catch (error) {
+        console.warn(`Timer ${label} failed`, error);
+      }
+    };
+
     const completedMode = mode;
     let nextMode: FocusMode;
     let nextDuration: number;
 
+    setIsRunning(false);
+
     if (completedMode === 'focus') {
+      const task = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : null;
+      const completedFocusSeconds = currentDurationSeconds;
+
       // After focus, save deep-work session first.
-      await disableDnd();
+      await runSafely('DND disable', disableDnd);
       if (userId) {
-        await saveCompletedFocusSession(userId, selectedTaskId, focusDurationSeconds);
+        await runSafely('session save', () =>
+          saveCompletedFocusSession(userId, selectedTaskId, completedFocusSeconds, Boolean(task)),
+        );
       }
 
       // Handle task completion
-      if (selectedTaskId) {
-        const task = tasks.find(t => t.id === selectedTaskId);
-        if (task && task.durationMinutes) {
+      if (selectedTaskId && task) {
+        if (task.durationMinutes) {
           const durationSeconds = task.durationMinutes * 60;
-          const timeSpent = (task.timeSpentSeconds || 0) + focusDurationSeconds;
+          const timeSpent = (task.timeSpentSeconds || 0) + completedFocusSeconds;
           if (userId) {
-            await updateTaskTimeSpent(userId, selectedTaskId, timeSpent);
+            await runSafely('task progress update', () =>
+              updateTaskTimeSpent(userId, selectedTaskId, timeSpent),
+            );
           }
           if (timeSpent >= durationSeconds) {
             // Task completed
             if (userId) {
-              await completeTask(userId, selectedTaskId);
+              await runSafely('task completion update', () => completeTask(userId, selectedTaskId));
             }
             setSelectedTaskId(null);
             setSelectedTimerType(null);
             setSelectedTimerName(null);
-            setIsRunning(false);
             setMode('focus', focusDurationSeconds);
             onTaskCompleted?.();
             return;
@@ -68,11 +87,12 @@ export function useTimer(onTaskCompleted?: () => void) {
             const remaining = durationSeconds - timeSpent;
             nextDuration = Math.min(remaining, focusDurationSeconds);
             nextMode = 'focus';
-            setIsRunning(false);
             setMode(nextMode, nextDuration);
             setTimeout(() => {
-              void enableDnd();
-              setIsRunning(true);
+              void (async () => {
+                await runSafely('DND enable', enableDnd);
+                setIsRunning(true);
+              })();
             }, 1000);
             return;
           }
@@ -81,7 +101,6 @@ export function useTimer(onTaskCompleted?: () => void) {
 
       if (selectedTimerType === 'regular') {
         // Regular mode ends after one deep focus block and does not auto-enter a break.
-        setIsRunning(false);
         setMode('focus', focusDurationSeconds);
         return;
       }
@@ -97,27 +116,32 @@ export function useTimer(onTaskCompleted?: () => void) {
       nextDuration = focusDurationSeconds;
     }
 
-    setIsRunning(false);
-
     // Set the next mode and start automatically
     setMode(nextMode, nextDuration);
     
     // Auto-start the next timer after a quick transition delay
     setTimeout(() => {
-      if (nextMode === 'focus') {
-        void enableDnd();
-      }
-      setIsRunning(true);
+      void (async () => {
+        if (nextMode === 'focus') {
+          await runSafely('DND enable', enableDnd);
+        }
+        setIsRunning(true);
+      })();
     }, 1000);
   }, [
     completedPomodoros,
+    currentDurationSeconds,
     focusDurationSeconds,
     longBreakDurationSeconds,
     longBreakInterval,
     mode,
     selectedTaskId,
+    selectedTimerType,
+    setSelectedTaskId,
     setIsRunning,
     setMode,
+    setSelectedTimerName,
+    setSelectedTimerType,
     shortBreakDurationSeconds,
     userId,
     incrementCompletedPomodoros,
@@ -137,7 +161,10 @@ export function useTimer(onTaskCompleted?: () => void) {
       const currentSeconds = useTimerStore.getState().secondsLeft;
       if (currentSeconds <= 1) {
         clearInterval(intervalId);
-        void completeInterval();
+        void completeInterval().catch((error) => {
+          console.warn('Timer completion failed', error);
+          useTimerStore.getState().setIsRunning(false);
+        });
         return;
       }
 
@@ -209,6 +236,7 @@ export function useTimer(onTaskCompleted?: () => void) {
   return {
     mode,
     secondsLeft,
+    currentDurationSeconds,
     focusDurationSeconds,
     shortBreakDurationSeconds,
     longBreakDurationSeconds,
@@ -217,9 +245,12 @@ export function useTimer(onTaskCompleted?: () => void) {
     selectedTaskId,
     selectedTimerType,
     selectedTimerName,
+    autoStartRequested,
     setSelectedTaskId,
     setSelectedTimerType,
     setSelectedTimerName,
+    requestAutoStart,
+    consumeAutoStart,
     start,
     pause,
     reset,

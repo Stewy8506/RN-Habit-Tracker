@@ -6,6 +6,7 @@ import { TaskList } from '@/components/Task/TaskList';
 import { useColors } from '@/hooks/use-colors';
 import { useTasks } from '@/hooks/useTasks';
 import { useTimerStore } from '@/store/useTimerStore';
+import { getNextTaskFocusSeconds } from '@/utils/taskTimer';
 import { useRouter } from 'expo-router';
 
 export default function TasksScreen() {
@@ -16,19 +17,20 @@ export default function TasksScreen() {
   const setSelectedTimerType = useTimerStore((state) => state.setSelectedTimerType);
   const setSelectedTimerName = useTimerStore((state) => state.setSelectedTimerName);
   const setMode = useTimerStore((state) => state.setMode);
+  const requestAutoStart = useTimerStore((state) => state.requestAutoStart);
   const focusDurationSeconds = useTimerStore((state) => state.focusDurationSeconds);
 
   const handleTaskSelect = (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const allottedSeconds = task.durationMinutes ? task.durationMinutes * 60 : focusDurationSeconds;
-    const timerDuration = Math.min(allottedSeconds, focusDurationSeconds);
+    const timerDuration = getNextTaskFocusSeconds(task, focusDurationSeconds);
 
     setSelectedTaskId(taskId);
     setSelectedTimerType('regular');
     setSelectedTimerName(task.title);
     setMode('focus', timerDuration);
+    requestAutoStart();
 
     router.push('/focus');
   };

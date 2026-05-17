@@ -7,6 +7,7 @@ import { useHabits } from '@/hooks/useHabits';
 import { useTasks } from '@/hooks/useTasks';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
+import { getNextTaskFocusSeconds } from '@/utils/taskTimer';
 import { isSameLocalDay } from '@/utils/time';
 
 const BG = '#0A0A0A';
@@ -27,6 +28,11 @@ export default function HomeScreen() {
   const { habits, loading: habitsLoading, completeHabit } = useHabits();
   const authLoading = useSettingsStore((s) => s.authLoading);
   const setSelectedTaskId = useTimerStore((s) => s.setSelectedTaskId);
+  const setSelectedTimerType = useTimerStore((s) => s.setSelectedTimerType);
+  const setSelectedTimerName = useTimerStore((s) => s.setSelectedTimerName);
+  const setMode = useTimerStore((s) => s.setMode);
+  const requestAutoStart = useTimerStore((s) => s.requestAutoStart);
+  const focusDurationSeconds = useTimerStore((s) => s.focusDurationSeconds);
   const insets = useSafeAreaInsets();
   const today = new Date();
 
@@ -70,6 +76,14 @@ export default function HomeScreen() {
 
   const startFocus = () => {
     setSelectedTaskId(nextTask?.id ?? null);
+    setSelectedTimerType(nextTask?.timerType ?? 'regular');
+    setSelectedTimerName(nextTask?.title ?? null);
+    if (nextTask) {
+      setMode('focus', getNextTaskFocusSeconds(nextTask, focusDurationSeconds));
+    } else {
+      setMode('focus', focusDurationSeconds);
+    }
+    requestAutoStart();
     router.push('/focus');
   };
 

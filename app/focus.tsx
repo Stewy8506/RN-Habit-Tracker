@@ -1,7 +1,6 @@
 import { CircularProgressRing } from '@/components/Timer/CircularProgressRing';
 import { WheelPicker } from '@/components/Timer/WheelPicker';
 import { useTimer } from '@/hooks/useTimer';
-import { getModeDuration } from '@/services/timerService';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useTimerStore } from '@/store/useTimerStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,10 +55,13 @@ export default function FocusScreen() {
   const {
     mode,
     secondsLeft,
+    currentDurationSeconds,
     focusDurationSeconds,
     shortBreakDurationSeconds,
     longBreakDurationSeconds,
     isRunning,
+    autoStartRequested,
+    consumeAutoStart,
     start,
     pause,
     reset,
@@ -73,17 +75,14 @@ export default function FocusScreen() {
   const selectedTaskId = useTimerStore((s) => s.selectedTaskId);
 
   useEffect(() => {
-    // Only auto-start if we have a task and it's NOT already running.
-    // However, if the user manually reset the timer (secondsLeft === focusDurationSeconds),
-    // we should respect that and NOT auto-start again immediately.
-    const isAtStart = secondsLeft === focusDurationSeconds;
-    if (selectedTaskId && !isRunning && mode === 'focus' && !isAtStart) {
-      start();
+    if (selectedTaskId && autoStartRequested && !isRunning && mode === 'focus') {
+      consumeAutoStart();
+      void start();
     }
-  }, [selectedTaskId, isRunning, mode, start, secondsLeft, focusDurationSeconds]);
+  }, [autoStartRequested, consumeAutoStart, selectedTaskId, isRunning, mode, start]);
 
   const progress =
-    secondsLeft / getModeDuration(mode, focusDurationSeconds, shortBreakDurationSeconds, longBreakDurationSeconds);
+    secondsLeft / currentDurationSeconds;
 
   // ── Mode transition animation ─────────────────────────────────────────────
   const transition = useSharedValue(0);

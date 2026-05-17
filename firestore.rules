@@ -112,6 +112,61 @@ service cloud.firestore {
             data.timerType in ['pomodoro', 'regular']);
     }
 
+    function validTaskUpdate() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+
+      return changed.hasOnly([
+          'title',
+          'completed',
+          'pomodoroCount',
+          'deadline',
+          'durationMinutes',
+          'timeSpentSeconds',
+          'icon',
+          'priority',
+          'timerType'
+        ])
+
+        && (!changed.hasAny(['title']) ||
+            (request.resource.data.title is string &&
+             request.resource.data.title.size() > 0 &&
+             request.resource.data.title.size() <= 160))
+
+        && (!changed.hasAny(['completed']) ||
+            request.resource.data.completed is bool)
+
+        && (!changed.hasAny(['pomodoroCount']) ||
+            (request.resource.data.pomodoroCount is int &&
+             request.resource.data.pomodoroCount >= 0))
+
+        && (!changed.hasAny(['timeSpentSeconds']) ||
+            (request.resource.data.timeSpentSeconds is int &&
+             request.resource.data.timeSpentSeconds >= 0))
+
+        && (!changed.hasAny(['deadline']) ||
+            request.resource.data.deadline == null ||
+            request.resource.data.deadline is timestamp)
+
+        && (!changed.hasAny(['durationMinutes']) ||
+            request.resource.data.durationMinutes == null ||
+            (request.resource.data.durationMinutes is int &&
+             request.resource.data.durationMinutes > 0 &&
+             request.resource.data.durationMinutes <= 1440))
+
+        && (!changed.hasAny(['icon']) ||
+            request.resource.data.icon == null ||
+            (request.resource.data.icon is string &&
+             request.resource.data.icon.size() <= 40))
+
+        && (!changed.hasAny(['priority']) ||
+            request.resource.data.priority == null ||
+            request.resource.data.priority in ['low', 'medium', 'high'])
+
+        && (!changed.hasAny(['timerType']) ||
+            request.resource.data.timerType == null ||
+            request.resource.data.timerType in ['pomodoro', 'regular']);
+    }
+
     // =========================
     // Habit Validation
     // =========================
@@ -161,6 +216,58 @@ service cloud.firestore {
 
         && (data.timerType == null ||
             data.timerType in ['pomodoro', 'regular']);
+    }
+
+    function validHabitUpdate() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+
+      return changed.hasOnly([
+          'name',
+          'streak',
+          'lastCompleted',
+          'icon',
+          'priority',
+          'category',
+          'durationMinutes',
+          'timerType'
+        ])
+
+        && (!changed.hasAny(['name']) ||
+            (request.resource.data.name is string &&
+             request.resource.data.name.size() > 0 &&
+             request.resource.data.name.size() <= 120))
+
+        && (!changed.hasAny(['streak']) ||
+            (request.resource.data.streak is int &&
+             request.resource.data.streak >= 0))
+
+        && (!changed.hasAny(['lastCompleted']) ||
+            request.resource.data.lastCompleted == null ||
+            request.resource.data.lastCompleted is timestamp)
+
+        && (!changed.hasAny(['icon']) ||
+            request.resource.data.icon == null ||
+            (request.resource.data.icon is string &&
+             request.resource.data.icon.size() <= 40))
+
+        && (!changed.hasAny(['priority']) ||
+            request.resource.data.priority == null ||
+            request.resource.data.priority in ['low', 'medium', 'high'])
+
+        && (!changed.hasAny(['category']) ||
+            request.resource.data.category == null ||
+            (request.resource.data.category is string &&
+             request.resource.data.category.size() <= 40))
+
+        && (!changed.hasAny(['durationMinutes']) ||
+            request.resource.data.durationMinutes == null ||
+            (request.resource.data.durationMinutes is int &&
+             request.resource.data.durationMinutes > 0 &&
+             request.resource.data.durationMinutes <= 1440))
+
+        && (!changed.hasAny(['timerType']) ||
+            request.resource.data.timerType == null ||
+            request.resource.data.timerType in ['pomodoro', 'regular']);
     }
 
     // =========================
@@ -220,9 +327,13 @@ service cloud.firestore {
         allow read, delete:
           if ownsUserPath(userId);
 
-        allow create, update:
+        allow create:
           if ownsUserPath(userId)
           && validTask(request.resource.data);
+
+        allow update:
+          if ownsUserPath(userId)
+          && (validTask(request.resource.data) || validTaskUpdate());
       }
 
       // =========================
@@ -234,9 +345,13 @@ service cloud.firestore {
         allow read, delete:
           if ownsUserPath(userId);
 
-        allow create, update:
+        allow create:
           if ownsUserPath(userId)
           && validHabit(request.resource.data);
+
+        allow update:
+          if ownsUserPath(userId)
+          && (validHabit(request.resource.data) || validHabitUpdate());
       }
 
       // =========================

@@ -21,6 +21,7 @@ export async function saveCompletedFocusSession(
   userId: string,
   taskId: string | null,
   duration: number,
+  shouldIncrementTaskPomodoro = true,
 ) {
   await createSession(userId, {
     taskId,
@@ -28,7 +29,7 @@ export async function saveCompletedFocusSession(
     completed: true,
   });
 
-  if (taskId) {
+  if (taskId && shouldIncrementTaskPomodoro) {
     await incrementTaskPomodoro(userId, taskId);
   }
 }
